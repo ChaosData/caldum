@@ -105,7 +105,7 @@ that will be applied in order to instrument the hook code.
 
 Hook classes are structured as follows:
 
-~~~Java
+~~~java
 @Hook
 class ExampleHook {
 
