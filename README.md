@@ -106,24 +106,23 @@ that will be applied in order to instrument the hook code.
 Hook classes are structured as follows:
 
 ~~~Java
-
 @Hook
-class <HookName> {
+class ExampleHook {
 
-  static class <SettingsName> {
+  static class SomeSettings {
     ... // type/method matchers, local dependency injection providers
   }
 
   ... // static fields (copied or dependency injected)
 
   @Advice.OnMethodEnter
-  static ... {
-
+  static void enter() {
+    ...
   }
 
   @Advice.OnMethodExit
-  static ... {
-
+  static void exit() {
+    ...
   }
 }
 ~~~
