@@ -26,7 +26,7 @@ cd caldum && ./gradlew
 VulcanLoader (VL) is a thin-wrapper that builds Caldum as a Java agent and
 provides a minimal interface to set up, reconfigure, and unload
 Caldum-compatible Java agents. Agent state is maintained based on the JAR
-filename, but not its entire file path; attempting to load a new agent JAR with
+filename, but not the entire file path; attempting to load a new agent JAR with
 same filename as an existing agent JAR will result in the original being
 unloaded prior to the new one being loaded.
 
