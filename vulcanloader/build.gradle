@@ -1,0 +1,66 @@
+apply plugin: 'java'
+
+buildscript {
+  repositories {
+    jcenter()
+  }
+
+  dependencies {
+    classpath 'com.github.jengelman.gradle.plugins:shadow:+'
+  }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+  compile fileTree(include: ['*.jar'], dir: 'tools') // for tools.jar on jdk < 9
+
+  compile group: 'net.bytebuddy', name: 'byte-buddy', version: '1.8.12'
+
+  // currently relies on ./gradlew from ../caldum for local maven cache
+  // will eventually get caldum on central repo
+  compile group: 'trust.nccgroup', name: 'caldum', version: '1.0.0'
+
+  //compile project(':caldum')
+}
+
+sourceSets {
+  main {
+    java {
+      srcDirs = ['./src']
+    }
+
+    resources {
+      srcDirs = ['./res']
+    }
+  }
+}
+
+jar {
+  manifest {
+    attributes (
+      "Manifest-Version": "1.0",
+      "Can-Redefine-Classes": "true",
+      "Can-Retransform-Classes": "true",
+      "Can-Set-Native-Method-Prefix": "true",
+      "Main-Class": "trust.nccgroup.vulcanloader.Main",
+      "Premain-Class": "trust.nccgroup.vulcanloader.PreMain",
+      "Agent-Class": "trust.nccgroup.vulcanloader.AgentMain"
+    )
+  }
+}
+
+shadowJar {
+  archiveName = "vl.${extension}"
+}
+
+defaultTasks "shadowJar"

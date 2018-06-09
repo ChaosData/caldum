@@ -1,0 +1,53 @@
+apply plugin: 'java'
+
+buildscript {
+  repositories {
+    jcenter()
+  }
+
+  dependencies {
+    classpath 'com.github.jengelman.gradle.plugins:shadow:+'
+  }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+  compile fileTree(include: ['*.jar'], dir: 'lib')
+
+  compileOnly group: 'trust.nccgroup', name: 'caldum', version: '1.0.0'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.8.12'
+}
+
+sourceSets {
+  main {
+    java {
+      srcDirs = ['./src']
+    }
+
+    resources {
+      srcDirs = ['./res']
+    }
+  }
+}
+
+jar {
+  manifest {
+    attributes (
+            "Manifest-Version": "1.0",
+            "Premain-Class": "trust.nccgroup.clojurehook.Entry",
+            "Agent-Class": "trust.nccgroup.clojurehook.Entry"
+    )
+  }
+}
+
+
+defaultTasks "shadowJar"

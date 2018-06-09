@@ -1,0 +1,2 @@
+//include ":caldum"
+//project(":caldum").projectDir = file("../caldum")
