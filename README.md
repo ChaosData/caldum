@@ -64,7 +64,6 @@ path/to/agent2.jar: <agent2 opts>
 * Unload all agents:
     * `java -jar path/to/vl.jar <pid> -u`
 
-
 # Structure
 
 Caldum and VulcanLoader are designed to directly expose a single bundled
@@ -86,6 +85,13 @@ instrumentation code. Caldum/VL will additionally invoke any
 `public static void unload()` method within the entry class when the
 agent is unloaded (e.g. manually or when reloading).
 
+## Java Version Support
+
+Caldum and VulcanLoader currently attempt to maintain support for the
+same versions of Java supported by Byte Buddy (currently Java 6 through 9+).
+Due to this, the codebases of Caldum and VulcanLoader themselves are
+built as Java 6; however, Caldum-compatible agents may target newer versions of
+Java supported by the JVM being instrumented.
 
 # Annotations (`trust.nccgroup.caldum.annotation.*`)
 
@@ -236,3 +242,10 @@ with it will not invoke the injected hook code when invoked from the call-stack
 of a `NoRecursion`-wrapped `@Hook`-annotated class. This is useful for
 performing invocations within hook code that may result in infinite recursion
 otherwise.
+
+# License
+
+Caldum and VulcanLoader are licensed under the
+[Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html).
+Exceptions to this (i.e. for certain vendored source files) are explicitly
+noted in the relevant source files.
