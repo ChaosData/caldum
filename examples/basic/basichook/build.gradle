@@ -19,6 +19,7 @@ class EmbeddedAgentPlugin implements Plugin<Project> {
     project.task('embed') {
       doLast {
         def bbver = project.configurations.compileOnly.files.find { it.getName().startsWith("byte-buddy-")}.getParentFile().getParentFile().getName()
+        def cvlver = project.configurations.compileOnly.files.find { it.getName().startsWith("caldum-")}.getParentFile().getParentFile().getName()
 
         project.configure(project) {
           apply plugin: 'com.github.johnrengelman.shadow'
@@ -29,21 +30,27 @@ class EmbeddedAgentPlugin implements Plugin<Project> {
           }
 
           configurations {
-            lol
+            lol {
+              resolutionStrategy.failOnVersionConflict()
+            }
           }
 
           dependencies {
             lol group: 'net.bytebuddy', name: 'byte-buddy', version: bbver
-            lol group: 'trust.nccgroup', name: 'vulcanloader', version: '+'
+            lol group: 'trust.nccgroup', name: 'vulcanloader', version: cvlver
           }
 
         }
 
-        def agentJar = project.shadowJar.outputs.files[0].toString()
+        // note: if this following line of code errors with a specific
+        // conflicting version, the specified version of byte-buddy conflicts
+        // with the range of versions allowed by the specified version of
+        // caldum. gradle simply reports the highest version within that range.
         def vlJar = project.configurations.lol.files[0].toString()
-        println project.configurations.lol.files
-
+        def agentJar = project.shadowJar.outputs.files[0].toString()
         def outJarName = new File(agentJar).getName().split('\\.')[0] + '-vl.jar'
+
+        println project.configurations.lol.files
         println outJarName
         println vlJar
       }
@@ -69,7 +76,7 @@ dependencies {
   compile fileTree(include: ['*.jar'], dir: 'lib')
 
   compileOnly group: 'trust.nccgroup', name: 'caldum', version: '1.0.0'
-  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.9.5'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.9.7'
 }
 
 sourceSets {
