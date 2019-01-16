@@ -12,6 +12,51 @@ buildscript {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 
+
+class EmbeddedAgentPlugin implements Plugin<Project> {
+  void apply(Project project) {
+
+    project.task('embed') {
+      doLast {
+        def bbver = project.configurations.compileOnly.files.find { it.getName().startsWith("byte-buddy-")}.getParentFile().getParentFile().getName()
+
+        project.configure(project) {
+          apply plugin: 'com.github.johnrengelman.shadow'
+
+          repositories {
+            mavenLocal()
+            mavenCentral()
+          }
+
+          configurations {
+            lol
+          }
+
+          dependencies {
+            lol group: 'net.bytebuddy', name: 'byte-buddy', version: bbver
+            lol group: 'trust.nccgroup', name: 'vulcanloader', version: '+'
+          }
+
+        }
+
+        def agentJar = project.shadowJar.outputs.files[0].toString()
+        def vlJar = project.configurations.lol.files[0].toString()
+        println project.configurations.lol.files
+
+        def outJarName = new File(agentJar).getName().split('\\.')[0] + '-vl.jar'
+        println outJarName
+        println vlJar
+      }
+    }
+    project.tasks.embed.dependsOn(project.tasks.shadowJar)
+  }
+}
+
+// Apply the plugin
+apply plugin: EmbeddedAgentPlugin
+
+
+
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
@@ -24,7 +69,7 @@ dependencies {
   compile fileTree(include: ['*.jar'], dir: 'lib')
 
   compileOnly group: 'trust.nccgroup', name: 'caldum', version: '1.0.0'
-  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.8.12'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.9.5'
 }
 
 sourceSets {

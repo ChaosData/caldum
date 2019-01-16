@@ -1,4 +1,6 @@
 apply plugin: 'java'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 buildscript {
   repositories {
@@ -12,6 +14,9 @@ buildscript {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 
+//name = 'vulcanloader'
+group = 'trust.nccgroup'
+version = '1.0.0'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -24,7 +29,7 @@ repositories {
 dependencies {
   compile fileTree(include: ['*.jar'], dir: 'tools') // for tools.jar on jdk < 9
 
-  compile group: 'net.bytebuddy', name: 'byte-buddy', version: '1.8.12'
+  compile group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.0, 1.10.0)'
 
   // currently relies on ./gradlew from ../caldum for local maven cache
   // will eventually get caldum on central repo
@@ -61,6 +66,45 @@ jar {
 
 shadowJar {
   archiveName = "vl.${extension}"
+
+  // removes -all from the build
+  classifier = ''
+}
+
+task sourceJar(type: Jar) {
+  from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+  from javadoc
+}
+
+// note: for local publish of fat jar: ./gradlew publishToMavenLocal
+publishing {
+  /*publications {
+    shadow(MavenPublication) { publication ->
+      project.shadow.component(publication)
+    }
+  }*/
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+
+      artifact sourceJar {
+        classifier "sources"
+      }
+
+      artifact javadocJar {
+        classifier = 'javadoc'
+      }
+    }
+  }
+
+  repositories {
+    maven {
+      url "https://127.0.0.1:1"
+    }
+  }
 }
 
 defaultTasks "shadowJar"

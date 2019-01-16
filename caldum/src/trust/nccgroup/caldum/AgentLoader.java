@@ -50,7 +50,20 @@ public final class AgentLoader {
 
   private static final Logger logger = TmpLogger.DEFAULT;
 
+
   public static boolean load(boolean isPre, String path,
+                             String agentArgs, Instrumentation inst) {
+    URL url;
+    try {
+      url = new File(path).toURI().toURL();
+    } catch (MalformedURLException e) {
+      logger.log(SEVERE, "unknown error", e);
+      return false;
+    }
+    return load(isPre, path, url, agentArgs, inst);
+  }
+
+  public static boolean load(boolean isPre, String path, URL url,
                          String agentArgs, Instrumentation inst) {
     if (logger == null) {
       System.err.println("logger not initialized. bailing.");
@@ -60,14 +73,6 @@ public final class AgentLoader {
     synchronized (lock) {
 
       if (!unload(path, false)) {
-        return false;
-      }
-
-      URL url;
-      try {
-        url = new File(path).toURI().toURL();
-      } catch (MalformedURLException e) {
-        logger.log(SEVERE, "unknown error", e);
         return false;
       }
 

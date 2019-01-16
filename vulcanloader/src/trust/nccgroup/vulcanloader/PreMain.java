@@ -17,7 +17,12 @@ limitations under the License.
 package trust.nccgroup.vulcanloader;
 
 
+import trust.nccgroup.caldum.AgentLoader;
+
 import java.lang.instrument.Instrumentation;
+import java.lang.management.ManagementFactory;
+import java.net.URL;
+import java.util.List;
 
 import static trust.nccgroup.vulcanloader.AgentLogger.logger;
 
@@ -33,7 +38,11 @@ public class PreMain {
       return;
     }
 
-    ConfigLoader.load(args, inst, true);
+    if (EmbeddedAgentLoader.hasEmbeddedAgent()) {
+      EmbeddedAgentLoader.load(args, inst);
+    } else {
+      ConfigLoader.load(args, inst, true);
+    }
   }
 
 }

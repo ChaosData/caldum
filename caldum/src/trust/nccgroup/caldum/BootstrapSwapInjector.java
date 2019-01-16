@@ -105,7 +105,7 @@ public class BootstrapSwapInjector {
       inst.redefineClasses(
         new ClassDefinition(
           old,
-          ClassFileLocator.ForClassLoader.read(newer).resolve()
+          ClassFileLocator.ForClassLoader.read(newer)
         )
       );
       return getSystemClassLoader().loadClass(newer.getName());
@@ -123,7 +123,7 @@ public class BootstrapSwapInjector {
     TypeDescription td = new TypeDescription.ForLoadedType(current);
     Map<TypeDescription,byte[]> cs = new HashMap<TypeDescription,byte[]>();
 
-    cs.put(td, ClassFileLocator.ForClassLoader.read(current).resolve());
+    cs.put(td, ClassFileLocator.ForClassLoader.read(current));
 
     File temp = TmpDir.create();
     if (temp == null) {

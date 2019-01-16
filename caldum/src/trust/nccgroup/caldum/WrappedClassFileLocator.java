@@ -27,15 +27,34 @@ class WrappedClassFileLocator implements ClassFileLocator {
     name = _name; impl = _impl;
   }
 
+  static class Resolution implements ClassFileLocator.Resolution {
+
+    private final byte[] bytes;
+
+    public Resolution(byte[] _bytes) {
+      bytes = _bytes;
+    }
+
+    @Override
+    public boolean isResolved() {
+      return true;
+    }
+
+    @Override
+    public byte[] resolve() {
+      return bytes;
+    }
+  }
+
   @Override
   public ClassFileLocator.Resolution locate(String typeName) throws IOException {
     if (name.equals(typeName)) {
       return new ClassFileLocator.Resolution.Explicit(impl);
     }
     try {
-      return ClassFileLocator.ForClassLoader.read(
+      return new Resolution(ClassFileLocator.ForClassLoader.read(
         WrappedClassFileLocator.class.getClassLoader().loadClass(typeName)
-      );
+      ));
     } catch (Throwable t) {
       return null;
     }
