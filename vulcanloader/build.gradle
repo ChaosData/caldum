@@ -64,6 +64,7 @@ jar {
   }
 }
 
+
 shadowJar {
   archiveName = "vl.${extension}"
 

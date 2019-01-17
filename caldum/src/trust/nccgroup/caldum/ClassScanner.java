@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.JarInputStream;
 
 /**
  * Instances of this class are not thread safe.
@@ -46,6 +47,7 @@ public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>
     Enumeration<JarEntry> je = null;
   }
 
+  //TODO: migrate to JarInputStream to support embedded JARs
   private ClassScanner(ClassLoader _ucl, HashSet<File> _hs) {
     ucl = _ucl;
     as = new ArrayList<File>(_hs);
@@ -181,6 +183,7 @@ public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>
     HashSet<File> h = new HashSet<File>();
 
     for (URL u : _ucl.getURLs()) {
+      System.out.println(u.getProtocol());
       if (!"file".equals(u.getProtocol())) {
         continue;
       }

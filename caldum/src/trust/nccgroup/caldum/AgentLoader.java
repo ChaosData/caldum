@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.logging.Level.SEVERE;
@@ -122,6 +123,7 @@ public final class AgentLoader {
         try {
           agentClass = Class.forName(agentName, true, childloader);
         } catch (ClassNotFoundException cnfe) {
+          logger.log(Level.SEVERE, ">>here<<", cnfe);
           logger.severe(String.format(
             "Failed to load agent: " +
               "Could not find class '%s' in '%s'.",

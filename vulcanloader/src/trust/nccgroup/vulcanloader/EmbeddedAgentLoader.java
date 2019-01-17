@@ -1,10 +1,18 @@
 package trust.nccgroup.vulcanloader;
 
 import trust.nccgroup.caldum.AgentLoader;
+import trust.nccgroup.caldum.util.TmpDir;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
 import java.util.List;
 
 public class EmbeddedAgentLoader {
@@ -37,9 +45,35 @@ public class EmbeddedAgentLoader {
       return;
     }
 
-    AgentLoader.initialize(inst);
-    boolean succeeded = AgentLoader.load(true, EMBEDDED_AGENT, embedded_agent, args, inst);
+    URL tmp_agent_url = null;
+    File tmp = TmpDir.create();
+    File tmpagent = new File(tmp, "agent.jar");
+    try {
+      if (tmpagent.createNewFile()) {
+        InputStream embedded_agent_stream = embedded_agent.openStream();
+        if (embedded_agent_stream != null) {
+          ReadableByteChannel rbc = Channels.newChannel(embedded_agent_stream);
+          FileOutputStream fos = new FileOutputStream(tmpagent);
+          fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 
+          tmp_agent_url = tmpagent.toURI().toURL();
+          embedded_agent_stream.close();
+        }
+      }
+
+    } catch (IOException ioe) { }
+
+    if (tmp_agent_url == null) {
+      System.err.println("Startup error: Failed to extract and load embedded agent.");
+      return;
+    }
+
+    AgentLoader.initialize(inst);
+    boolean succeeded = AgentLoader.load(true, EMBEDDED_AGENT, tmp_agent_url, args, inst);
+
+    TmpDir.delete(tmp);
+
+    System.out.println(succeeded);
     if (!succeeded) {
       System.err.println("Startup error: Embedded agent failed to load.");
     }

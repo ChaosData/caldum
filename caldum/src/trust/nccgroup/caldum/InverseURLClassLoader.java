@@ -29,35 +29,75 @@ import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//import org.xeustechnologies.jcl.JarClassLoader;
+//note: migrating to support JarClassLoader and its strange behaviors will
+//      require a lot of additional reworking:
+//      - appears to handle jar closing internally by loading all classes
+//      - internal loader used to get classes from loaded URLs is unclear
+//      - use of nested JARs works, but the rest of caldum isn't built for it
+//      - doesn't allow for setting the parent classloader
+//      - will probably want to have 2 separate InverseURLClassLoader
+//        implementations, one based on URLcl and the other on JCL, since
+//        JCL probably results in some performance impacts against existing
+//        tuning and is only needed for embedded agents, which are just for
+//        convenience.
+//
+//      for now, embedded agents will simply be extracted out to a tmp dir
+
+
 @SuppressWarnings("WeakerAccess")
-public class InverseURLClassLoader extends URLClassLoader {
+public class InverseURLClassLoader extends /*JarClassLoader*/ URLClassLoader {
 
   private final URL[] urls;
   private final Logger logger;
   private static final String error_msg = "Error while attempting to close Java 6 URLClassLoader:";
+//  private final ClassLoader parent;
 
-  public InverseURLClassLoader(URL[] _urls, ClassLoader parent, Logger _logger) {
-    super(_urls, parent);
+  //note: previously subclassed URLClassLoader, but URLClassLoader
+  //      does not support jar: URLs for a JAR within a JAR
+  public InverseURLClassLoader(URL[] _urls, ClassLoader _parent, Logger _logger) {
+    super(_urls);
+
+//    getSystemLoader().setOrder(3); // system class loader
+//    getLocalLoader().setOrder(2);  // local class loader
+//    getParentLoader().setOrder(4); // parent class loader
+//    getThreadLoader().setOrder(5); // thread context class loader
+//    getCurrentLoader().setOrder(1);      // current class loader
+
+//    parent = _parent;
 
     urls = _urls;
     assert _logger != null;
     logger = _logger;
   }
 
+//  //adding this in since JarClassLoader does not have this
+//  public URL[] getURLs() {
+//    return urls;
+//  }
+
   @Override
   public Class<?> loadClass(String name) {
     try {
       return super.findClass(name);
+      //return super.loadClass(name);
     } catch (ClassNotFoundException e) {
       try {
         return super.loadClass(name);
+        //return parent.loadClass(name);
       } catch (ClassNotFoundException e1) {
+        //System.out.println("failed to find " + name);
         return null;
       }
     }
   }
 
+
   public void java6close() { //via https://stackoverflow.com/a/31114719
+    /*if (this.getClass().getSuperclass().getName().equals("org.xeustechnologies.jcl.JarClassLoader")) {
+      return;
+    }*/
+
     try {
       Field f__sun_misc_URLClassPath__ucp = URLClassLoader.class.getDeclaredField("ucp");
       f__sun_misc_URLClassPath__ucp.setAccessible(true);
@@ -102,6 +142,7 @@ public class InverseURLClassLoader extends URLClassLoader {
       logger.log(Level.SEVERE, error_msg, nsfe);
     }
   }
+
 
   public void loadAll() {
     String[] paths = new String[urls.length];
