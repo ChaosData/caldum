@@ -1,0 +1,20 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+group = 'trust.nccgroup'
+version = '1.0.0'
+description = """Caldum VulcanLoader Embedding Plugin"""
+
+repositories {
+  jcenter()
+}
+
+dependencies {
+  implementation gradleApi()
+  implementation localGroovy()
+  compile group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '+'
+
+}
+
+defaultTasks "install"

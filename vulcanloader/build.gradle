@@ -108,4 +108,4 @@ publishing {
   }
 }
 
-defaultTasks "shadowJar"
+defaultTasks "publishToMavenLocal", "shadowJar"
