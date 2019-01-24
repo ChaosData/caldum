@@ -155,6 +155,10 @@ defaultTasks 'shadowJar'
         //dependsOn 'cleanTest'
         outputs.upToDateWhen {false}
         jvmArgs javaagent
+
+        testLogging {
+          showStandardStreams = true
+        }
       }
     }
 

@@ -63,10 +63,4 @@ jar {
   }
 }
 
-test {
-  testLogging {
-    showStandardStreams = true
-  }
-}
-
 defaultTasks "shadowJar" //, "caldum-vl-embed"
