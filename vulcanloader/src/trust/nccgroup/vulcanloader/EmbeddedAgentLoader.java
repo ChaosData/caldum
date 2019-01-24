@@ -73,7 +73,6 @@ public class EmbeddedAgentLoader {
 
     TmpDir.delete(tmp);
 
-    System.out.println(succeeded);
     if (!succeeded) {
       System.err.println("Startup error: Embedded agent failed to load.");
     }

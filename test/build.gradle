@@ -57,11 +57,16 @@ jar {
   manifest {
     attributes (
             "Manifest-Version": "1.0",
-            "Premain-Class": "trust.nccgroup.basichook.AgentEntry",
-            "Agent-Class": "trust.nccgroup.basichook.AgentEntry"
+            "Premain-Class": "trust.nccgroup.caldumtest.AgentEntry",
+            "Agent-Class": "trust.nccgroup.caldumtest.AgentEntry"
     )
   }
 }
 
+test {
+  testLogging {
+    showStandardStreams = true
+  }
+}
 
 defaultTasks "shadowJar" //, "caldum-vl-embed"

@@ -1,7 +1,7 @@
-package trust.nccgroup.caldum;
+package trust.nccgroup.caldum
 
-import org.gradle.api.Project
 import org.gradle.api.Plugin
+import org.gradle.api.Project
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 
@@ -17,9 +17,17 @@ class EmbeddedAgentPlugin implements Plugin<Project> {
 
     project.configure(project) {
       apply plugin: 'com.github.johnrengelman.shadow'
+
     }
 
-    project.task('caldum-vl-embed') {
+    project.task('caldum-vl-embed') { task ->
+
+      java.nio.file.Path agentjar = project.shadowJar.outputs.files[0].toPath()
+      task.inputs.file(agentjar.toFile().getCanonicalPath())
+      java.nio.file.Path finaljar = agentjar.getParent().resolve(agentjar.toFile().getName().replace(".jar", "-vl.jar"))
+      task.outputs.file(finaljar.toFile().getCanonicalPath())
+
+
       doLast {
         def bbver = project.configurations.compileOnly.files.find { it.getName().startsWith("byte-buddy-")}.getParentFile().getParentFile().getName()
         def cvlver = project.configurations.compileOnly.files.find { it.getName().startsWith("caldum-")}.getParentFile().getName()
@@ -117,7 +125,7 @@ defaultTasks 'shadowJar'
 
         //println tmpdir.toString()
 
-        java.nio.file.Path agentjar = project.shadowJar.outputs.files[0].toPath()
+
         java.nio.file.Path zipfile = tmpdir.resolve("build/libs/vl.jar")
 
         java.nio.file.FileSystem zipfs = FileSystems.newFileSystem(zipfile, null)
@@ -129,12 +137,26 @@ defaultTasks 'shadowJar'
         Files.copy(agentjar, pathInZipfile, StandardCopyOption.REPLACE_EXISTING)
         zipfs.close()
 
-        java.nio.file.Path finaljar = agentjar.getParent().resolve(agentjar.toFile().getName().replace(".jar", "-vl.jar"))
         Files.copy(zipfile, finaljar, StandardCopyOption.REPLACE_EXISTING)
 
         tmpdir.deleteDir()
       }
+
     }
+
     project.tasks['caldum-vl-embed'].dependsOn(project.tasks.shadowJar)
+    project.tasks['test'].dependsOn(project.tasks['caldum-vl-embed'])
+
+    String finaljarpath = project.tasks['caldum-vl-embed'].outputs.files[0]
+    String javaagent = '-javaagent:' + finaljarpath
+
+    project.configure(project) {
+      test {
+        //dependsOn 'cleanTest'
+        outputs.upToDateWhen {false}
+        jvmArgs javaagent
+      }
+    }
+
   }
 }

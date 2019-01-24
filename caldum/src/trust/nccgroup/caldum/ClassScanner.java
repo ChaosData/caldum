@@ -183,7 +183,6 @@ public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>
     HashSet<File> h = new HashSet<File>();
 
     for (URL u : _ucl.getURLs()) {
-      System.out.println(u.getProtocol());
       if (!"file".equals(u.getProtocol())) {
         continue;
       }

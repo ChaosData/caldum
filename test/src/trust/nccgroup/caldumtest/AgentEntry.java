@@ -14,27 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package trust.nccgroup.basic;
+package trust.nccgroup.caldumtest;
 
-import java.util.*;
-import java.lang.management.ManagementFactory;
+import java.lang.instrument.Instrumentation;
+import java.util.logging.Logger;
 
-class Main {
+public class AgentEntry {
 
-  public static void main(String[] argv) {
-    System.out.println(Arrays.toString(ManagementFactory.getRuntimeMXBean().getInputArguments().toArray()));
+  public static Logger logger = null;
 
-    System.out.println("main()");
-    System.out.println("main()".getBytes());
-    foo();
+  public static void agentmain(String agentArgs, Instrumentation inst) {
+    setup(agentArgs, inst);
   }
 
-  public static void foo() {
-    System.out.println("foo()");
-    bar();
+  public static void premain(String agentArgs, Instrumentation inst) {
+    System.out.println("running premain");
+    setup(agentArgs, inst);
   }
 
-  public static void bar() {
-    System.out.println("bar()");
+  public static void setup(String agentArgs, Instrumentation inst) {
+    StringHook.inst = inst;
+  }
+
+  public static void unload() {
+
   }
 }

@@ -20,6 +20,7 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.loading.ClassInjector;
 import trust.nccgroup.caldum.util.TmpDir;
+import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +58,9 @@ public class BootstrapSwapInjector {
           if (isSystem) {
             newClass = __inject(current, inst);
           } else {
-            return null;
+            TmpLogger.DEFAULT.severe("???????? 1: " + isSystem);
+            newClass = __inject(current, inst);
+            //return null;
           }
         }
       } catch (ClassNotFoundException cnfe) { // first time
@@ -79,6 +82,7 @@ public class BootstrapSwapInjector {
         if (old.getClassLoader() == null) { // all subsequent attempts
           return old;
         } else { // should never happen
+          TmpLogger.DEFAULT.severe("???????? 2");
           return null;
         }
       } catch (ClassNotFoundException cnfe) { // first time

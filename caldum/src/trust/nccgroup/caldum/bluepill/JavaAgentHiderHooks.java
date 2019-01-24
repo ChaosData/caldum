@@ -35,7 +35,7 @@ public class JavaAgentHiderHooks {
   public static class RMXB {
 
     public static List<String> vmArgs = null;
-    public static final Object lock = new Object();
+    public static Object lock = new Object();
 
     public static class Settings {
       @Matcher.Type
