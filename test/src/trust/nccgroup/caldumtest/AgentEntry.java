@@ -17,23 +17,35 @@ limitations under the License.
 package trust.nccgroup.caldumtest;
 
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.*;
 import java.util.logging.Logger;
+
 
 public class AgentEntry {
 
+  public static Instrumentation inst = null;
   public static Logger logger = null;
 
-  public static void agentmain(String agentArgs, Instrumentation inst) {
-    setup(agentArgs, inst);
+  public static void agentmain(String agentArgs, Instrumentation _inst) {
+    setup(agentArgs, _inst);
   }
 
-  public static void premain(String agentArgs, Instrumentation inst) {
+  public static void premain(String agentArgs, Instrumentation _inst) {
     System.out.println("running premain");
-    setup(agentArgs, inst);
+    setup(agentArgs, _inst);
   }
 
-  public static void setup(String agentArgs, Instrumentation inst) {
-    StringHook.inst = inst;
+  public static void setup(String agentArgs, Instrumentation _inst) {
+    AgentEntry.inst = _inst;
+    StringHook.inst = _inst;
+    try {
+      Class<?> st = Class.forName("trust.nccgroup.caldumtest.test.SpringTest");
+      Field f = st.getDeclaredField("inst");
+      f.setAccessible(true);
+      f.set(null, inst);
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
   }
 
   public static void unload() {

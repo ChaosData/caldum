@@ -13,6 +13,7 @@ public class StringHookTest {
   @Test
   public void unsecret() {
     assertArrayEquals("__notsecret__".getBytes(), "__secret__".getBytes());
+    //assertArrayEquals("__notsecret".getBytes(), "__secret".getBytes());
 
   }
 
