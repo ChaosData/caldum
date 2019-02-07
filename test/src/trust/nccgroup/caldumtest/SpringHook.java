@@ -42,9 +42,7 @@ import static trust.nccgroup.caldum.annotation.Matcher.Type;
 public class SpringHook {
   static Instrumentation inst = null;
 
-  //@Debug
   @Hook(wrappers = { NoRecursion.class })
-  //@Hook
   public static class HttpServeletRequestGetRequestURIWrapper {
 
     public static class Settings {
@@ -61,7 +59,7 @@ public class SpringHook {
 
       @Member
       //static ElementMatcher m = isMethod().and(nameStartsWith("get"));
-      static ElementMatcher m = isMethod().and(named("getRequestURI"));
+      static ElementMatcher m = isMethod().and(named("getServletPath"));
     }
 
 

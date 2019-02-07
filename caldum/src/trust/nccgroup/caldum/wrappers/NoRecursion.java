@@ -89,7 +89,7 @@ public class NoRecursion {
       }
     }
 
-    @OnMethodExit
+    @OnMethodExit(backupArguments=false)
     static void exit_exit(@Origin Class<?> hook_class, @Enter boolean enter_skipped) {
       //System.out.println("exit_exit");
 

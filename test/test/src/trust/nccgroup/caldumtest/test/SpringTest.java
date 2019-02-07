@@ -2,6 +2,7 @@ package trust.nccgroup.caldumtest.test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import org.springframework.context.annotation.Configuration;
@@ -77,8 +78,15 @@ public class SpringTest {
     @RestController
     static class TestController {
       @RequestMapping("/test")
+      public String test() {
+        //TODO: pass to main thread to raise the exception
+        fail("Reaching this implies that /test was not changed to /nottest by the Advice.");
+        return "failure";
+      }
+
+      @RequestMapping("/nottest")
       public String test(@RequestParam(value="name", defaultValue="World") String name, HttpServletRequest req) {
-        System.out.println(req.getRequestURI());
+        assertEquals("caldum", name);
         return "Hello " + name;
       }
 

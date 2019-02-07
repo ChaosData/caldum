@@ -21,6 +21,7 @@ import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.asm.AsmVisitorWrapper;
+import net.bytebuddy.implementation.attribute.AnnotationRetention;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -37,6 +38,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.io.FileOutputStream;
+
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
@@ -281,7 +284,7 @@ public class PluggableAdviceAgent {
         DynamicType.Builder<?> dtb = new ByteBuddy()
           .with(InstrumentedType.Factory.Default.FROZEN)
           .with(Implementation.Context.Disabled.Factory.INSTANCE) // don't add method for static init
-          //.with(AnnotationRetention.ENABLED)
+          .with(AnnotationRetention.ENABLED)
           .redefine(hookClass);
 
         for (Class<?> hook_wrapper : wrappers) {
