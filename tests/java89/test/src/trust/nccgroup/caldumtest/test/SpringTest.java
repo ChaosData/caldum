@@ -62,6 +62,7 @@ public class SpringTest {
       resText = res.body().string();
     } catch (Throwable t) {
       t.printStackTrace();
+      fail("unknown error");
     }
 
     try {
@@ -96,6 +97,7 @@ public class SpringTest {
   @EnableAutoConfiguration
   static class MyApplication {
     public static void main(String[] fakeargv) {
+      System.setProperty("server.address", "127.0.0.1");
       SpringApplication.run(MyApplication.class, fakeargv);
     }
 
