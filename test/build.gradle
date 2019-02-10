@@ -15,8 +15,8 @@ buildscript {
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'caldum-vl-embed'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
   mavenLocal()
@@ -30,8 +30,9 @@ dependencies {
   compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.9.9'
 
   testCompile group: 'junit', name: 'junit', version: '4.12'
-  testCompile 'org.springframework.boot:spring-boot-starter-web:2.1.2.RELEASE'
-  testCompile 'com.squareup.okhttp3:okhttp:3.13.1'
+  testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.1.2.RELEASE'
+  testCompile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.13.1'
+  testCompile group: 'com.google.guava', name: 'guava', version: '27.0.1-jre'
 }
 
 sourceSets {
@@ -65,11 +66,6 @@ jar {
   }
 }
 
-test {
-  executable '/Users/jtd/opt/jdk-11.0.2+9/Contents/Home/bin/java'
-  testLogging {
-    events "PASSED", "STARTED", "FAILED", "SKIPPED"
-  }
-}
-
-defaultTasks "shadowJar" //, "caldum-vl-embed"
+defaultTasks "shadowJar"
+             //, "caldum-vl-embed"
+             //, "test -Ptest.executable=path/to/bin/java"

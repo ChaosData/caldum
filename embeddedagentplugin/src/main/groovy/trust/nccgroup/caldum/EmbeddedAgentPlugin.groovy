@@ -158,6 +158,15 @@ defaultTasks 'shadowJar'
 
         testLogging {
           showStandardStreams = true
+          events "PASSED", "STARTED", "FAILED", "SKIPPED"
+        }
+      }
+    }
+
+    if (project.hasProperty('test.executable')) {
+      project.configure(project) {
+        test {
+          executable project.property('test.executable')
         }
       }
     }

@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.lang.reflect.*;
 
 
-import static net.bytebuddy.asm.Advice.OnMethodExit;
+import static net.bytebuddy.asm.Advice.*;
 import static net.bytebuddy.asm.Advice.This;
 import static net.bytebuddy.asm.Advice.Origin;
 import static net.bytebuddy.asm.Advice.Return;
@@ -79,6 +79,59 @@ public class SpringHook {
 
       if ("/test".equals(ret)) {
         ret = new String("/nottest");
+      }
+    }
+
+  }
+
+  @Hook(wrappers = { NoRecursion.class })
+  public static class RequestParamInterceptor {
+
+    public static class Settings {
+      @Type
+      static ElementMatcher typeMatcher() {
+        TypePool tp = TypePool.Default.ofSystemLoader();
+        TypeDescription td = tp.describe("org.springframework.web.method.annotation.RequestParamMethodArgumentResolver").resolve();
+        return isSubTypeOf(td);
+      }
+
+      @Member
+      //static ElementMatcher m = isMethod().and(nameStartsWith("get"));
+      static ElementMatcher m = isMethod().and(named("resolveName"));
+    }
+
+
+    @OnMethodEnter
+    static String enter(@Origin Class c, @Origin Method m, @This Object self, @Argument(value=0) String name) {
+      /*try {
+        String cn = c == null ? "(null)" : c.getName();
+        String mn = m == null ? "(null)" : m.getName();
+        String ss = self == null ? "(null)" : self.getClass().getName();
+
+        System.out.println(cn + "::" + mn + "(\"" + name + "\", ...)" + ("name".equals(name) ? " <<<<<<<<<<<<<" : ""));
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }*/
+
+      if ("name".equals(name)) {
+        return name;
+      }
+      return null;
+    }
+
+    @OnMethodExit(onThrowable = Exception.class)
+    static void exit(@Enter String name, @Return(readOnly = false) Object ret) {
+      if (name == null || ret == null) {
+        return;
+      }
+
+      if (!(ret instanceof String)) {
+        return;
+      }
+
+      String r = (String)ret;
+      if ("zzzzz".equals(r)) {
+        ret = "caldum";
       }
     }
 

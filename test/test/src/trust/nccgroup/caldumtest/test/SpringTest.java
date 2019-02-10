@@ -23,12 +23,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 
+import com.google.common.util.concurrent.SettableFuture;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 public class SpringTest {
 
   public static Instrumentation inst = null;
+  public static SettableFuture<Optional<Runnable>> routeTestFuture = SettableFuture.create();
+  public static SettableFuture<Optional<Runnable>> paramTestFuture = SettableFuture.create();
 
-  static class Dumper implements ClassFileTransformer {
+  /*static class Dumper implements ClassFileTransformer {
     public byte[] transform​(ClassLoader loader, String className, Class<?> classBeingRedefined,
                       ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
       if (classBeingRedefined != null) {
@@ -41,31 +46,50 @@ public class SpringTest {
       }
       return null;
     }
-  }
+  }*/
 
   @Test
-  public void startspring() {
+  public void startspring() throws Throwable {
     MyApplication.main(new String[]{});
 
     OkHttpClient c = new OkHttpClient();
     Request req = new Request.Builder()
       .url("http://127.0.0.1:8080/test?name=zzzzz")
       .build();
+    String resText = null;
     try {
       Response res = c.newCall(req).execute();
-      System.out.println(res.body().string());
+      resText = res.body().string();
     } catch (Throwable t) {
       t.printStackTrace();
     }
 
     try {
+      while (true) {
+        try {
+          routeTestFuture.get().ifPresent((test) -> { test.run(); });
+          break;
+        } catch (InterruptedException ignored) { }
+      }
+      while (true) {
+        try {
+          paramTestFuture.get().ifPresent((test) -> { test.run(); });
+          break;
+        } catch (InterruptedException ignored) { }
+      }
+    } catch (ExecutionException ee) {
+      throw (Throwable)ee;
+    }
+    assertEquals("Hello caldum", resText);
+
+    /*try {
       Dumper d = new Dumper();
       inst.addTransformer(d, true);
       inst.retransformClasses(org.apache.catalina.connector.Request.class);
       inst.removeTransformer(d);
     } catch (Throwable t) {
       t.printStackTrace();
-    }
+    }*/
   }
 
   @Configuration
@@ -79,14 +103,18 @@ public class SpringTest {
     static class TestController {
       @RequestMapping("/test")
       public String test() {
-        //TODO: pass to main thread to raise the exception
-        fail("Reaching this implies that /test was not changed to /nottest by the Advice.");
+        routeTestFuture.set(Optional.of(() -> {
+          fail("Reaching this implies that /test was not changed to /nottest by the Advice.");
+        }));
         return "failure";
       }
 
       @RequestMapping("/nottest")
-      public String test(@RequestParam(value="name", defaultValue="World") String name, HttpServletRequest req) {
-        assertEquals("caldum", name);
+      public String test(@RequestParam(name="name", defaultValue="World") String name, HttpServletRequest req) {
+        routeTestFuture.set(Optional.empty());
+        paramTestFuture.set(Optional.of(() -> {
+          assertEquals("caldum", name);
+        }));
         return "Hello " + name;
       }
 
