@@ -1,0 +1,76 @@
+apply plugin: 'java'
+
+buildscript {
+  repositories {
+    mavenLocal()
+    jcenter()
+  }
+
+  dependencies {
+    classpath group: 'trust.nccgroup', name: 'caldum-embeddedagentplugin', version: '1.0.0'
+    classpath group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '+'
+  }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'caldum-vl-embed'
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+  compile fileTree(include: ['*.jar'], dir: 'lib')
+
+  compileOnly group: 'trust.nccgroup', name: 'caldum', version: '1.0.0'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.9.9'
+
+  testCompile group: 'junit', name: 'junit', version: '4.12'
+  //testCompile group: 'io.takari.junit', name: 'takari-cpsuite', version: '1.2.7'
+}
+
+sourceSets {
+  main {
+    java {
+      srcDirs = ['./src']
+    }
+
+    resources {
+      srcDirs = ['./res']
+    }
+  }
+
+  test {
+    java {
+      srcDirs = ['./test/src']
+    }
+    resources {
+      srcDirs = ['./test/res']
+    }
+  }
+}
+
+jar {
+  manifest {
+    attributes (
+            "Manifest-Version": "1.0",
+            "Premain-Class": "trust.nccgroup.caldumtest.AgentEntry",
+            "Agent-Class": "trust.nccgroup.caldumtest.AgentEntry"
+    )
+  }
+}
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+task testJar(type: ShadowJar) {
+ classifier = 'tests'
+ from sourceSets.test.output
+ configurations = [project.configurations.testRuntime]
+}
+
+defaultTasks "shadowJar"
+             //, "caldum-vl-embed", "testJar"
+// java -cp build/libs/java67-tests.jar org.junit.runner.JUnitCore trust.nccgroup.caldumtest.test.RunAllTests
