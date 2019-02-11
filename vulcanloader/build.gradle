@@ -27,7 +27,12 @@ repositories {
 }
 
 dependencies {
-  compile fileTree(include: ['*.jar'], dir: 'tools') // for tools.jar on jdk < 9
+  // for tools.jar on jdk < 9
+  if (project.hasProperty('no-tools')) {
+    compileOnly fileTree(include: ['*.jar'], dir: 'tools')
+  } else {
+    compile fileTree(include: ['*.jar'], dir: 'tools')
+  }
 
   compile group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.0, 1.10.0)'
 
