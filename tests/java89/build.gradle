@@ -66,6 +66,13 @@ jar {
   }
 }
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+task testJar(type: ShadowJar) {
+ classifier = 'tests'
+ from sourceSets.test.output
+ configurations = [project.configurations.testRuntime]
+}
+
 defaultTasks "shadowJar"
              //, "caldum-vl-embed"
              //, "test -Dorg.gradle.java.home=path/to/java/Home -Ptest.executable=path/to/bin/java"
