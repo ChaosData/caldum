@@ -18,7 +18,9 @@ Caldum is intended as a pure library. Currently, it may be built and installed
 into the local Maven repository on a host with the following commands.
 
 ~~~bash
-cd caldum && ./gradlew
+cd caldum && ./gradlew; cd ..
+cd vulcanloader && ./gradlew; cd ..
+cd embeddedagentplugin && ./gradlew; cd ..
 ~~~
 
 # VulcanLoader
