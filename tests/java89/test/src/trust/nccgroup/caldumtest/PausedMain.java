@@ -11,11 +11,13 @@ public class PausedMain {
 
   public static void main(String[] argv) {
     try {
-      String port = argv.length > 0 ? argv[1] : "7777";
-      InetAddress host = InetAddress.getByName("127.0.0.1");
-      ServerSocket serverSocket = new ServerSocket(Integer.parseInt(port), 1, host);
-      Socket clientSocket = serverSocket.accept();
-      clientSocket.close();
+      String port = argv.length > 0 ? argv[0] : "7777";
+      if (!"run".equals(port)) {
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+        ServerSocket serverSocket = new ServerSocket(Integer.parseInt(port), 1, host);
+        Socket clientSocket = serverSocket.accept();
+        clientSocket.close();
+      }
     } catch (IOException ioe) {
       ioe.printStackTrace();
       return;

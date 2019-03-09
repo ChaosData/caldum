@@ -66,6 +66,10 @@ jar {
   }
 }
 
+test {
+  include "**/RunAllTests.class"
+}
+
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 task testJar(type: ShadowJar) {
  classifier = 'tests'

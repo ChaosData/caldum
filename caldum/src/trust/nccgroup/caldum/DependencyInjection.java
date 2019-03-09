@@ -177,9 +177,10 @@ public class DependencyInjection {
         } catch (NoSuchFieldException e) {
           continue;
         }
-
         tfield.set(null, val);
-      } catch (IllegalAccessException ignored) { }
+      } catch (IllegalAccessException ignored) {
+        System.out.println("should not be reached");
+      }
     }
   }
 

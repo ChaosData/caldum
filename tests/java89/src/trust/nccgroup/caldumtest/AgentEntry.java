@@ -38,14 +38,6 @@ public class AgentEntry {
   public static void setup(String agentArgs, Instrumentation _inst) {
     AgentEntry.inst = _inst;
     StringHook.inst = _inst;
-    try {
-      Class<?> st = Class.forName("trust.nccgroup.caldumtest.test.SpringTest");
-      Field f = st.getDeclaredField("inst");
-      f.setAccessible(true);
-      f.set(null, inst);
-    } catch (Throwable t) {
-      t.printStackTrace();
-    }
   }
 
   public static void unload() {

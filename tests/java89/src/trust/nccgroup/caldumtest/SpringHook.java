@@ -22,6 +22,7 @@ import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.description.type.TypeDescription;
 
 import trust.nccgroup.caldum.annotation.Debug;
+import trust.nccgroup.caldum.annotation.Dump;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.annotation.Matcher;
 import trust.nccgroup.caldum.wrappers.*;
@@ -43,6 +44,7 @@ public class SpringHook {
   static Instrumentation inst = null;
 
   @Hook(wrappers = { NoRecursion.class })
+  @Dump
   public static class HttpServeletRequestGetRequestURIWrapper {
 
     public static class Settings {

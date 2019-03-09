@@ -103,9 +103,9 @@ public final class HookProcessor {
       }
       Class<?> configClass = nestedClasses[0];
 
-      Class<?> bootstrapHook;
+      Class<?> injectedhooks[] = new Class<?>[]{null,null};
       try {
-        bootstrapHook = BootstrapSwapInjector.swapOrInject(hook, inst, isSystem);
+        injectedhooks[1] = BootstrapSwapInjector.swapOrInject(hook, inst, isSystem, injectedhooks);
       } catch (UnmodifiableClassException e) {
         logger.log(Level.SEVERE, "failed (unmodifiable) to swap/inject class: " + hook.getName(), e);
         continue;
@@ -114,72 +114,82 @@ public final class HookProcessor {
         continue;
       }
 
-      if (bootstrapHook == null) {
+      if (injectedhooks[1] == null) {
         logger.log(Level.SEVERE, "failed (unknown error) to swap/inject class: " + hook.getName());
         continue;
       }
-
-      for (Field field : hook.getDeclaredFields()) {
-        if (!Modifier.isStatic(field.getModifiers())) {
-          continue;
-        }
-
-        if (!field.isAccessible()) {
-          field.setAccessible(true);
-        }
-
-        Object val;
-        try {
-          val = field.get(null);
-        } catch (IllegalAccessException iae) {
-          logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
-          continue;
-        }
-        if (val == null) {
-          continue;
-        }
-
-        Field nfield;
-        try {
-          nfield = bootstrapHook.getDeclaredField(field.getName());
-        } catch (NoSuchFieldException nsfe) {
-          logger.log(Level.SEVERE, "unable to copy static initialized field", nsfe);
-          continue;
-        }
-
-        if (!nfield.isAccessible()) {
-          nfield.setAccessible(true);
-        }
-
-        try {
-          nfield.set(null, val);
-        } catch (IllegalAccessException iae) {
-          logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
-        }
-
-      }
-
-      DependencyInjection.injectGlobal(bootstrapHook, globalProvides, hook);
 
       HashMap<String,Object> localProvides = new HashMap<String, Object>();
       for (Class<?> nested : hook.getDeclaredClasses()) {
         localProvides.putAll(DependencyInjection.getProvides(nested));
       }
 
-      DependencyInjection.injectLocal(bootstrapHook, localProvides, hook);
+      for (Class<?> injectedhook : injectedhooks) {
+        if (injectedhook == null) {
+          continue;
+        }
+        copyFields(hook, injectedhook);
+        DependencyInjection.injectGlobal(injectedhook, globalProvides, hook);
+        DependencyInjection.injectLocal(injectedhook, localProvides, hook);
 
-      DestructingResettableClassFileTransformer rcft;
-      try {
-        rcft = new DestructingResettableClassFileTransformer(PluggableAdviceAgent.Builder.fromClass(configClass).build(inst), bootstrapHook);
-        logger.log(Level.INFO, "applied hook for " + configClass.getDeclaringClass().toString());
-      } catch (PluggableAdviceAgent.BuildException e) {
-        logger.log(Level.SEVERE, "failed to build hook", e);
-        continue;
+        DestructingResettableClassFileTransformer rcft;
+        try {
+          rcft = new DestructingResettableClassFileTransformer(PluggableAdviceAgent.Builder.fromClass(configClass).build(inst), injectedhook);
+          logger.log(Level.INFO, "applied hook for " + configClass.getDeclaringClass().toString());
+        } catch (PluggableAdviceAgent.BuildException e) {
+          logger.log(Level.SEVERE, "failed to build hook", e);
+          continue;
+        }
+        ret.add(rcft);
+
       }
-      ret.add(rcft);
+
     }
 
     return ret;
+  }
+
+  private static void copyFields(Class<?> hook, Class<?> bootstrapHook) {
+    for (Field field : hook.getDeclaredFields()) {
+      if (!Modifier.isStatic(field.getModifiers())) {
+        continue;
+      }
+
+      if (!field.isAccessible()) {
+        field.setAccessible(true);
+      }
+
+      Object val;
+      try {
+        val = field.get(null);
+      } catch (IllegalAccessException iae) {
+        logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
+        continue;
+      }
+      if (val == null) {
+        continue;
+      }
+
+      Field nfield;
+      try {
+        nfield = bootstrapHook.getDeclaredField(field.getName());
+      } catch (NoSuchFieldException nsfe) {
+        logger.log(Level.SEVERE, "unable to copy static initialized field", nsfe);
+        continue;
+      }
+
+      if (!nfield.isAccessible()) {
+        nfield.setAccessible(true);
+      }
+
+      try {
+        nfield.set(null, val);
+      } catch (IllegalAccessException iae) {
+        logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
+      }
+
+    }
+
   }
 
 }

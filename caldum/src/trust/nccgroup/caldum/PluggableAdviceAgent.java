@@ -58,6 +58,7 @@ public class PluggableAdviceAgent {
     private ElementMatcher<?>[] ignoreMatchers = null;
 
     private boolean debug = false;
+    private boolean dump = false;
 
     private Class<?>[] wrappers = new Class<?>[]{};
 
@@ -125,6 +126,11 @@ public class PluggableAdviceAgent {
       return this;
     }
 
+    public Builder dump(boolean _dump) {
+      dump = _dump;
+      return this;
+    }
+
     public Builder wrappers(Class<?>[] _wrappers) {
       wrappers = _wrappers;
       return this;
@@ -147,6 +153,7 @@ public class PluggableAdviceAgent {
       builder.hookClass(hook);
       builder.wrappers(h.wrappers());
       builder.debug(hook.getAnnotation(Debug.class) != null);
+      builder.dump(hook.getAnnotation(Dump.class) != null);
 
       for (Field field : configClass.getDeclaredFields()) {
         if (!Modifier.isStatic(field.getModifiers())) {
@@ -312,14 +319,22 @@ public class PluggableAdviceAgent {
         alt_hook_bytes = dtb.make().getBytes();
       }
 
+
+      if (dump) {
+        DumpingClassFileTransformer.dump(inst, hookClass, "");
+      }
       if (alt_hook_bytes == null) {
         return abn.transform(
           new AdviceTransformer(hookClass, memberMatcher)
         ).installOn(inst);
       } else {
-        return abn.transform(
+        ResettableClassFileTransformer ret = abn.transform(
           new AdviceTransformer(hookClass, alt_hook_bytes, memberMatcher)
         ).installOn(inst);
+        if (dump) {
+          DumpingClassFileTransformer.dump(inst, hookClass, ".mod");
+        }
+        return ret;
       }
     }
 
