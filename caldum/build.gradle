@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.0, 1.10.0)'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.6, 1.10.0)'
   //compile group: 'org.xeustechnologies', name: 'jcl-core', version: '2.4'
 }
 

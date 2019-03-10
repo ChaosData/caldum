@@ -38,7 +38,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.io.FileOutputStream;
 
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
@@ -59,6 +58,7 @@ public class PluggableAdviceAgent {
 
     private boolean debug = false;
     private boolean dump = false;
+    private boolean dump_wrappers = false;
 
     private Class<?>[] wrappers = new Class<?>[]{};
 
@@ -131,6 +131,11 @@ public class PluggableAdviceAgent {
       return this;
     }
 
+    public Builder dump_wrappers(boolean _dump_wrappers) {
+      dump_wrappers = _dump_wrappers;
+      return this;
+    }
+
     public Builder wrappers(Class<?>[] _wrappers) {
       wrappers = _wrappers;
       return this;
@@ -154,6 +159,7 @@ public class PluggableAdviceAgent {
       builder.wrappers(h.wrappers());
       builder.debug(hook.getAnnotation(Debug.class) != null);
       builder.dump(hook.getAnnotation(Dump.class) != null);
+      builder.dump_wrappers(hook.getAnnotation(DumpWrappers.class) != null);
 
       for (Field field : configClass.getDeclaredFields()) {
         if (!Modifier.isStatic(field.getModifiers())) {
@@ -269,20 +275,22 @@ public class PluggableAdviceAgent {
         .disableClassFormatChanges()
         .with(redefinitionStrategy);
 
-      if (debug) {
-        ab = ab.with(new AgentBuilder.Listener.StreamWriting(System.out));
-      }
-
       if (ignoreMatchers != null) {
         ab = setIgnore(ab, ignoreMatchers);
       }
 
       AgentBuilder.Identified.Narrowable abn;
-      if (rawMatcher != null) {
-        abn = ab.type(rawMatcher);
-      } else{
-        abn = ab.type(typeMatcher, classLoaderMatcher, moduleMatcher);
+      if (rawMatcher == null) {
+        rawMatcher = new AgentBuilder.RawMatcher.ForElementMatchers(typeMatcher, classLoaderMatcher, not(supportsModules()).or(moduleMatcher));
       }
+
+      DumpingListener dl = null;
+
+      if (debug || dump) {
+        dl = new DumpingListener(debug ? System.out : null, dump, rawMatcher, inst);
+        ab = ab.with(dl);
+      }
+      abn = ab.type(rawMatcher);
 
 
       byte[] alt_hook_bytes = null;
@@ -319,23 +327,27 @@ public class PluggableAdviceAgent {
         alt_hook_bytes = dtb.make().getBytes();
       }
 
+      AgentBuilder.Identified.Extendable abe;
 
-      if (dump) {
-        DumpingClassFileTransformer.dump(inst, hookClass, "");
-      }
       if (alt_hook_bytes == null) {
-        return abn.transform(
+        abe = abn.transform(
           new AdviceTransformer(hookClass, memberMatcher)
-        ).installOn(inst);
+        );
       } else {
-        ResettableClassFileTransformer ret = abn.transform(
-          new AdviceTransformer(hookClass, alt_hook_bytes, memberMatcher)
-        ).installOn(inst);
-        if (dump) {
-          DumpingClassFileTransformer.dump(inst, hookClass, ".mod");
+        if (dump_wrappers) {
+          SimpleDumpingClassFileTransformer.dump(inst, hookClass, "");
+          SimpleDumpingClassFileTransformer.dump(inst, hookClass, ".wrapped", alt_hook_bytes);
         }
-        return ret;
+        abe = abn.transform(
+          new AdviceTransformer(hookClass, alt_hook_bytes, memberMatcher)
+        );
       }
+      if (dump) {
+        return abe.installOn(inst, dl);
+      } else {
+        return abe.installOn(inst);
+      }
+
     }
 
   }

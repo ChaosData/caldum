@@ -6,9 +6,9 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 
-public class DumpingClassFileTransformer implements ClassFileTransformer {
+public class SimpleDumpingClassFileTransformer implements ClassFileTransformer {
   private String suffix;
-  private DumpingClassFileTransformer(String _suffix) {
+  private SimpleDumpingClassFileTransformer(String _suffix) {
     suffix = _suffix;
   }
 
@@ -26,10 +26,20 @@ public class DumpingClassFileTransformer implements ClassFileTransformer {
 
   public static void dump(Instrumentation inst, Class<?> hookClass, String suffix) {
     try {
-      DumpingClassFileTransformer d = new DumpingClassFileTransformer(suffix);
+      SimpleDumpingClassFileTransformer d = new SimpleDumpingClassFileTransformer(suffix);
       inst.addTransformer(d, true);
       inst.retransformClasses(hookClass);
       inst.removeTransformer(d);
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
+  }
+
+  public static void dump(Instrumentation inst, Class<?> hookClass, String suffix, byte[] alt) {
+    try {
+      String path = "./" + hookClass.getName() + suffix + ".class";
+      FileOutputStream stream = new FileOutputStream(path);
+      stream.write(alt);
     } catch (Throwable t) {
       t.printStackTrace();
     }
