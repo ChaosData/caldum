@@ -56,5 +56,5 @@ public class State {
   //public static Set<Long> active = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
 
   public static ConcurrentHashMap<Long, State> states = new ConcurrentHashMap<Long, State>();
-
+  public static ConcurrentHashMap<Class<?>, ConcurrentHashMap<Long, State>> class_states = new ConcurrentHashMap<Class<?>, ConcurrentHashMap<Long, State>>();
 }
