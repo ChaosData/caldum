@@ -60,7 +60,7 @@ public class StringHookTest {
     }
   }
 
-  int bytesIndexOf(byte[] source, byte[] search, int fromIndex) {
+  static int bytesIndexOf(byte[] source, byte[] search, int fromIndex) {
     boolean find = false;
     int i;
     for (i = fromIndex; i <= (source.length - search.length); i++) {

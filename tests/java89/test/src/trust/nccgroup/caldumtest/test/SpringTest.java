@@ -2,6 +2,7 @@ package trust.nccgroup.caldumtest.test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import org.junit.Test;
 
@@ -17,6 +18,9 @@ import java.lang.instrument.*;
 import java.lang.reflect.*;
 import java.security.ProtectionDomain;
 import java.nio.file.*;
+import java.io.RandomAccessFile;
+import java.io.IOException;
+import java.util.*;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -91,6 +95,49 @@ public class SpringTest {
     } catch (Throwable t) {
       t.printStackTrace();
     }*/
+
+    byte [] wrapped_pattern_bytes = "java/lang/Thread".getBytes();
+    try {
+      RandomAccessFile f = new RandomAccessFile("./trust.nccgroup.caldumtest.SpringHook$HttpServeletRequestGetRequestURIWrapper.class", "r");
+      byte[] b = new byte[(int)f.length()];
+      f.readFully(b);
+      int pos = bytesIndexOf(b, wrapped_pattern_bytes, 0);
+      assertEquals(-1, pos);
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+
+    try {
+      RandomAccessFile f = new RandomAccessFile("./trust.nccgroup.caldumtest.SpringHook$HttpServeletRequestGetRequestURIWrapper.wrapped.class", "r");
+      byte[] b = new byte[(int)f.length()];
+      f.readFully(b);
+      int pos = bytesIndexOf(b, wrapped_pattern_bytes, 0);
+      assertNotEquals(-1, pos);
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+  }
+
+  static int bytesIndexOf(byte[] source, byte[] search, int fromIndex) {
+    boolean find = false;
+    int i;
+    for (i = fromIndex; i <= (source.length - search.length); i++) {
+      if (source[i] == search[0]) {
+        find = true;
+        for (int j = 0; j < search.length; j++) {
+          if (source[i + j] != search[j]) {
+            find = false;
+          }
+        }
+      }
+      if (find) {
+        break;
+      }
+    }
+    if (!find) {
+      return -1;
+    }
+    return i;
   }
 
   @Configuration
