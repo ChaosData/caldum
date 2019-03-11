@@ -58,8 +58,8 @@ public final class HookProcessor {
     ArrayList<DestructingResettableClassFileTransformer> ret =
       new ArrayList<DestructingResettableClassFileTransformer>(8);
 
-    ArrayList<Class<?>> hooks = new ArrayList<Class<?>>();
-    ArrayList<Class<?>> providers = new ArrayList<Class<?>>();
+    ArrayList<Class<?>> hooks = new ArrayList<Class<?>>(8);
+    ArrayList<Class<?>> providers = new ArrayList<Class<?>>(8);
     HashMap<String,Object> globalProvides = new HashMap<String, Object>(16);
 
     Iterable<Class<?>> cs;
@@ -131,6 +131,12 @@ public final class HookProcessor {
         copyFields(hook, injectedhook);
         DependencyInjection.injectGlobal(injectedhook, globalProvides, hook);
         DependencyInjection.injectLocal(injectedhook, localProvides, hook);
+
+        if (injectedhook == injectedhooks[0]) {
+          // yes, ==, we only want to set up the fields on the classpath version
+          // we don't want to cause the hooks to be applied twice
+          continue;
+        }
 
         DestructingResettableClassFileTransformer rcft;
         try {
