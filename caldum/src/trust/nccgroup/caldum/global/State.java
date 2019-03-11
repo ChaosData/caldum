@@ -17,6 +17,8 @@ limitations under the License.
 package trust.nccgroup.caldum.global;
 
 //import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class State {
@@ -28,8 +30,8 @@ public class State {
 
   public static final State ENTER_ENTER = new State(0, State.class);
   public static final State ENTER_EXIT = new State(1, State.class);
-  public static final State EXIT_ENTER = new State(1, State.class);
-  public static final State EXIT_EXIT = new State(1, State.class); // unused
+  public static final State EXIT_ENTER = new State(2, State.class);
+  public static final State EXIT_EXIT = new State(3, State.class); // unused
 
   private int state;
   private Class<?> clazz;
@@ -53,8 +55,23 @@ public class State {
     return false;
   }
 
+  public String toString() {
+    switch (state) {
+      case 0: { return "ENTER_ENTER"; }
+      case 1: { return "ENTER_EXIT"; }
+      case 2: { return "EXIT_ENTER"; }
+      case 3: { return "EXIT_EXIT"; }
+      default: { return "INVALID"; }
+    }
+  }
+
   //public static Set<Long> active = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
 
-  public static ConcurrentHashMap<Long, State> states = new ConcurrentHashMap<Long, State>();
-  public static ConcurrentHashMap<Class<?>, ConcurrentHashMap<Long, State>> class_states = new ConcurrentHashMap<Class<?>, ConcurrentHashMap<Long, State>>();
+  //public static ConcurrentHashMap<Long, State> states = new ConcurrentHashMap<Long, State>(16, 0.75f, 1);
+  // using synchronized over ConcurrentHashMap due to concerns that writes may not finish (and reads get a stale value)
+  public static Map<Long, State> states = new HashMap<Long, State>();
+  public static Map<Class<?>, Map<Long, State>> class_states = new HashMap<Class<?>, Map<Long, State>>();
+
+
+
 }

@@ -49,11 +49,16 @@ public class NoRecursion {
     static boolean enter_enter(@Origin Class<?> hook_class) {
       //System.out.println("enter_enter");
 
-      State s = State.states.putIfAbsent(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class));
+      State s;
+      synchronized (State.states) {
+        s = State.states.putIfAbsent(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class));
+      }
       if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
         return false; // run entry hook body, eventually run exit hook body (if exit hook'd)
       } else if (s.equals(new State(ENTER_EXIT, hook_class))) {
-        State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+        synchronized (State.states) {
+          State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+        }
         return false; // top level is entry-only hook and existing state is stale, replace and run entry hook body
       } else { // already set
         return true; // skip
@@ -67,7 +72,9 @@ public class NoRecursion {
       if (enter_skipped) {
         return;
       } else { // ratchet state
-        State.states.replace(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
+        synchronized (State.states) {
+          State.states.replace(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
+        }
       }
     }
   }
@@ -78,11 +85,16 @@ public class NoRecursion {
     static boolean exit_enter(@Origin Class<?> hook_class) {
       //System.out.println("exit_enter");
 
-      State s = State.states.putIfAbsent(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+      State s;
+      synchronized (State.states) {
+        s = State.states.putIfAbsent(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+      }
       if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
         return false; // run exit hook body
       } else if (s.equals(new State(ENTER_EXIT, hook_class))) { // this is the exit to the just completed entry hook
-        State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+        synchronized (State.states) {
+          State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+        }
         return false; // run exit hook body
       } else {
         return true; // skip
@@ -96,10 +108,11 @@ public class NoRecursion {
       if (enter_skipped) {
         return;
       } else { // clear state
-        State.states.remove(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+        synchronized (State.states) {
+          State.states.remove(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+        }
       }
     }
   }
-
 
 }

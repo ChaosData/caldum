@@ -23,6 +23,7 @@ import net.bytebuddy.description.type.TypeDescription;
 
 import trust.nccgroup.caldum.annotation.Debug;
 import trust.nccgroup.caldum.annotation.Dump;
+import trust.nccgroup.caldum.annotation.DumpWrappers;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.annotation.Matcher;
 import trust.nccgroup.caldum.wrappers.*;
@@ -44,7 +45,7 @@ public class SpringHook {
   static Instrumentation inst = null;
 
   @Hook(wrappers = { NoRecursion.class })
-  @Dump
+  @DumpWrappers
   public static class HttpServeletRequestGetRequestURIWrapper {
 
     public static class Settings {
@@ -55,8 +56,70 @@ public class SpringHook {
       static ElementMatcher typeMatcher() {
         //TypePool tp = TypePool.Default.ofClassPath();
         TypePool tp = TypePool.Default.ofSystemLoader();
-        TypeDescription td = tp.describe("javax.servlet.http.HttpServletRequest").resolve();
-        return isSubTypeOf(td);
+        try {
+          TypeDescription td = tp.describe("javax.servlet.http.HttpServletRequest").resolve();
+          return isSubTypeOf(td);
+        } catch (Throwable t) {
+          // java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppClassLoader): attempted  duplicate class definition for name: "net/bytebuddy/pool/TypePool$Default$LazyTypeDescription$GenericTypeToken$ForTypeVariable$UnresolvedTypeVariable"
+          // potentially some sort of race condition being hit (reliably)
+          // only appears to happen when there are a certain number of wrapped (any type) hooks in play.
+          // the odd thing is that it happens in a single thread execution chain during the non-bytecode generation/instrumentation part of the pluggableadviceagent builder code
+          // probably an issue with bytebuddy
+          // TODO: wait until code is open sourced to report since triage is likely to be insane
+          /*
+SEVERE: failed to build hook
+trust.nccgroup.caldum.PluggableAdviceAgent$BuildException: failed to execute matcher generator
+  at trust.nccgroup.caldum.PluggableAdviceAgent$Builder.fromClass(PluggableAdviceAgent.java:215)
+  at trust.nccgroup.caldum.HookProcessor.process(HookProcessor.java:137)
+  at trust.nccgroup.caldum.HookProcessor.process(HookProcessor.java:41)
+  at trust.nccgroup.caldum.AgentLoader.load(AgentLoader.java:165)
+  at trust.nccgroup.vulcanloader.EmbeddedAgentLoader.load(EmbeddedAgentLoader.java:72)
+  at trust.nccgroup.vulcanloader.PreMain.premain(PreMain.java:42)
+  at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+  at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+  at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+  at java.lang.reflect.Method.invoke(Method.java:498)
+  at sun.instrument.InstrumentationImpl.loadClassAndStartAgent(InstrumentationImpl.java:386)
+  at sun.instrument.InstrumentationImpl.loadClassAndCallPremain(InstrumentationImpl.java:401)
+Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppClassLoader): attempted  duplicate class definition for name: "net/bytebuddy/pool/TypePool$Default$LazyTypeDescription$GenericTypeToken$ForTypeVariable$UnresolvedTypeVariable"
+  at java.lang.ClassLoader.defineClass1(Native Method)
+  at java.lang.ClassLoader.defineClass(ClassLoader.java:763)
+  at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:142)
+  at java.net.URLClassLoader.defineClass(URLClassLoader.java:467)
+  at java.net.URLClassLoader.access$100(URLClassLoader.java:73)
+  at java.net.URLClassLoader$1.run(URLClassLoader.java:368)
+  at java.net.URLClassLoader$1.run(URLClassLoader.java:362)
+  at java.security.AccessController.doPrivileged(Native Method)
+  at java.net.URLClassLoader.findClass(URLClassLoader.java:361)
+  at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+  at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:331)
+  at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+  at net.bytebuddy.pool.TypePool$Default$GenericTypeExtractor.visitTypeVariable(TypePool.java:2142)
+  at net.bytebuddy.jar.asm.signature.SignatureReader.parseType(SignatureReader.java:178)
+  at net.bytebuddy.jar.asm.signature.SignatureReader.parseType(SignatureReader.java:240)
+  at net.bytebuddy.jar.asm.signature.SignatureReader.accept(SignatureReader.java:111)
+  at net.bytebuddy.pool.TypePool$Default$GenericTypeExtractor$ForSignature.extract(TypePool.java:2482)
+  at net.bytebuddy.pool.TypePool$Default$GenericTypeExtractor$ForSignature$OfMethod.extract(TypePool.java:2662)
+  at net.bytebuddy.pool.TypePool$Default$LazyTypeDescription$MethodToken.<init>(TypePool.java:5979)
+  at net.bytebuddy.pool.TypePool$Default$TypeExtractor$MethodExtractor.visitEnd(TypePool.java:8279)
+  at net.bytebuddy.jar.asm.ClassReader.readMethod(ClassReader.java:1279)
+  at net.bytebuddy.jar.asm.ClassReader.accept(ClassReader.java:679)
+  at net.bytebuddy.jar.asm.ClassReader.accept(ClassReader.java:391)
+  at net.bytebuddy.pool.TypePool$Default.parse(TypePool.java:1176)
+  at net.bytebuddy.pool.TypePool$Default.doDescribe(TypePool.java:1160)
+  at net.bytebuddy.pool.TypePool$AbstractBase.describe(TypePool.java:408)
+  at net.bytebuddy.pool.TypePool$AbstractBase$Hierarchical.describe(TypePool.java:471)
+  at trust.nccgroup.caldumtest.SpringHook$HttpServeletRequestGetRequestURIWrapper$Settings.typeMatcher(SpringHook.java:60)
+  at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+  at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+  at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+  at java.lang.reflect.Method.invoke(Method.java:498)
+  at trust.nccgroup.caldum.PluggableAdviceAgent$Builder.fromClass(PluggableAdviceAgent.java:211)
+  ... 11 more
+          */
+          TypeDescription td = tp.describe("javax.servlet.http.HttpServletRequest").resolve();
+          return isSubTypeOf(td);
+        }
       }
 
       @Member

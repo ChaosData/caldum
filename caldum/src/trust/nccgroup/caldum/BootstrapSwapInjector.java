@@ -141,8 +141,9 @@ public class BootstrapSwapInjector {
         if (old.getClassLoader() == null) { // all subsequent attempts
           return old;
         } else { // should never happen
-          TmpLogger.DEFAULT.severe("???????? 2");
-          return null;
+          return __inject(current, inst);
+          //TmpLogger.DEFAULT.severe("???????? 2: " + current.getName());
+          //return null;
         }
       } catch (ClassNotFoundException cnfe) { // first time
         return __inject(current, inst);

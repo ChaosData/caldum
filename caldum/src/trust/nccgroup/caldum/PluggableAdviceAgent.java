@@ -212,7 +212,7 @@ public class PluggableAdviceAgent {
         } catch (IllegalAccessException e) {
           continue;
         } catch (InvocationTargetException e) {
-          throw new BuildException("failed to execute matcher generator", e);
+          throw new BuildException("failed to execute matcher generator", e.getCause());
         }
         if (value == null) {
           continue;

@@ -9,6 +9,7 @@ import trust.nccgroup.caldumtest.test.*;
   Version.class,
   StringHookTest.class,
   ProviderTest.class,
+  NoRecursionTest.class,
   SpringTest.class,
 })
 public class RunAllTests {}
