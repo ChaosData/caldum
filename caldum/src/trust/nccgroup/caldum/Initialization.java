@@ -16,6 +16,7 @@ limitations under the License.
 
 package trust.nccgroup.caldum;
 
+import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.bluepill.JavaAgentHiderHooks;
 import trust.nccgroup.caldum.global.State;
 
@@ -34,6 +35,13 @@ public class Initialization {
     try {
       BootstrapSwapInjector.inject(State.class, inst);
     } catch (IOException ignore) { }
+    try {
+      BootstrapSwapInjector.inject(Hook.class, inst);
+    } catch (IOException ignore) { }
+
+    // We try to hook every @Hook-annotated class on initial load so that we
+    // can add add the __dynvars__ variable to it.
+    DynVarsAgent.setup(inst);
 
     // Java agents are not directly aware of their own JAR files
     // due to this, we can't iterate the core JAR to scan for hooks

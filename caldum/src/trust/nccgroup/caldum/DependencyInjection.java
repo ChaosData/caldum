@@ -23,6 +23,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.Map;
+
+import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public class DependencyInjection {
 
@@ -104,7 +107,18 @@ public class DependencyInjection {
     return ret;
   }
 
+  @SuppressWarnings({"unchecked","Duplicates"})
   public static void injectLocal(Class<?> target, HashMap<String,Object> vals, Class<?> full) {
+    Map<String,Object> dynvars = null;
+    try {
+      Field dynvars_field = target.getDeclaredField(DYNVARS);
+      dynvars = (Map<String,Object>)dynvars_field.get(null);
+    } catch (NoSuchFieldException ignored) {
+      ignored.printStackTrace();
+    } catch (IllegalAccessException ignored) {
+      ignored.printStackTrace();
+    }
+
     Field[] fields = full.getDeclaredFields();
     for (Field field : fields) {
       if (!Modifier.isStatic(field.getModifiers())) {
@@ -142,15 +156,32 @@ public class DependencyInjection {
         try {
           tfield = target.getDeclaredField(field.getName());
         } catch (NoSuchFieldException e) {
+          if (dynvars != null) {
+            dynvars.put(field.getName(), val);
+          }
           continue;
         }
 
         tfield.set(null, val);
+        if (dynvars != null) {
+          dynvars.put(field.getName(), val);
+        }
       } catch (IllegalAccessException ignored) { }
     }
   }
 
+  @SuppressWarnings({"unchecked","Duplicates"})
   public static void injectGlobal(Class<?> target, HashMap<String,Object> vals, Class<?> full) {
+    Map<String,Object> dynvars = null;
+    try {
+      Field dynvars_field = target.getDeclaredField(DYNVARS);
+      dynvars = (Map<String,Object>)dynvars_field.get(null);
+    } catch (NoSuchFieldException ignored) {
+      ignored.printStackTrace();
+    } catch (IllegalAccessException ignored) {
+      ignored.printStackTrace();
+    }
+
     Field[] fields = full.getDeclaredFields();
     for (Field field : fields) {
       if (!Modifier.isStatic(field.getModifiers())) {
@@ -169,15 +200,20 @@ public class DependencyInjection {
       if (val == null) {
         continue;
       }
-
       try {
         Field tfield;
         try {
           tfield = target.getDeclaredField(field.getName());
         } catch (NoSuchFieldException e) {
+          if (dynvars != null) {
+            dynvars.put(field.getName(), val);
+          }
           continue;
         }
         tfield.set(null, val);
+        if (dynvars != null) {
+          dynvars.put(field.getName(), val);
+        }
       } catch (IllegalAccessException ignored) {
         System.out.println("should not be reached");
       }

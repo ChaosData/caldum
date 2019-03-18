@@ -18,6 +18,7 @@ package trust.nccgroup.caldum.bluepill;
 
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.matcher.ElementMatcher;
+import trust.nccgroup.caldum.annotation.DumpWrappers;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.annotation.Matcher;
 
@@ -32,6 +33,7 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
 public class JavaAgentHiderHooks {
 
   @Hook // Caldum-internal @Hooks are loaded manually in Initialization::run
+  @DumpWrappers
   public static class RMXB {
 
     public static List<String> vmArgs = null;

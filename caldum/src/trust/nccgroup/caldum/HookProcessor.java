@@ -28,8 +28,12 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static java.lang.ClassLoader.getSystemClassLoader;
+import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public final class HookProcessor {
 
@@ -103,6 +107,18 @@ public final class HookProcessor {
       }
       Class<?> configClass = nestedClasses[0];
 
+      Class<?> alreadyInjectedClass = null;
+      try {
+        Class<?> old = getSystemClassLoader().loadClass(hook.getName());
+        if (old.getClassLoader() == null) {
+          alreadyInjectedClass = old;
+          System.out.println("old: " + old);
+          System.out.println("old.getClassLoader(): " + old.getClassLoader());
+        }
+      } catch (ClassNotFoundException cnfe) {
+        // don't add dynvar instrumentation since it's the first time
+      }
+
       Class<?> injectedhooks[] = new Class<?>[]{null,null};
       try {
         injectedhooks[1] = BootstrapSwapInjector.swapOrInject(hook, inst, isSystem, injectedhooks);
@@ -128,6 +144,8 @@ public final class HookProcessor {
         if (injectedhook == null) {
           continue;
         }
+
+        initDynVars(hook);
         copyFields(hook, injectedhook);
         DependencyInjection.injectGlobal(injectedhook, globalProvides, hook);
         DependencyInjection.injectLocal(injectedhook, localProvides, hook);
@@ -140,22 +158,40 @@ public final class HookProcessor {
 
         DestructingResettableClassFileTransformer rcft;
         try {
-          rcft = new DestructingResettableClassFileTransformer(PluggableAdviceAgent.Builder.fromClass(configClass).build(inst), injectedhook);
+          rcft = new DestructingResettableClassFileTransformer(
+            PluggableAdviceAgent.Builder.fromClass(configClass).build(inst, alreadyInjectedClass),
+            injectedhook
+          );
           logger.log(Level.INFO, "applied hook for " + configClass.getDeclaringClass().toString());
         } catch (PluggableAdviceAgent.BuildException e) {
           logger.log(Level.SEVERE, "failed to build hook", e);
           continue;
         }
         ret.add(rcft);
-
       }
-
     }
-
     return ret;
   }
 
+  private static void initDynVars(Class<?> hook) {
+    try {
+      // the injected version will get initialized from this later
+      Map<String,Object> m = new HashMap<String,Object>();
+      Field dynvars = hook.getDeclaredField(DYNVARS);
+      dynvars.set(null, m);
+    } catch (NoSuchFieldException ignored) { }
+      catch (IllegalAccessException ignored) { }
+  }
+
+  @SuppressWarnings("unchecked")
   private static void copyFields(Class<?> hook, Class<?> bootstrapHook) {
+    Map<String,Object> dynvars = null;
+    try {
+      Field dynvars_field = hook.getDeclaredField(DYNVARS);
+      dynvars = (Map<String,Object>)dynvars_field.get(null);
+    } catch (NoSuchFieldException ignored) { }
+    catch (IllegalAccessException ignored) { }
+
     for (Field field : hook.getDeclaredFields()) {
       if (!Modifier.isStatic(field.getModifiers())) {
         continue;
@@ -172,6 +208,7 @@ public final class HookProcessor {
         logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
         continue;
       }
+
       if (val == null) {
         continue;
       }
@@ -190,12 +227,15 @@ public final class HookProcessor {
 
       try {
         nfield.set(null, val);
+        if (!DYNVARS.equals(field.getName())) {
+          if (dynvars != null) {
+            dynvars.put(field.getName(), val);
+          }
+        }
       } catch (IllegalAccessException iae) {
         logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
       }
-
     }
 
   }
-
 }

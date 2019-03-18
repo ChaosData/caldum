@@ -21,16 +21,21 @@ import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.asm.AsmVisitorWrapper;
-import net.bytebuddy.implementation.attribute.AnnotationRetention;
+import net.bytebuddy.asm.MemberRemoval;
+import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
+import net.bytebuddy.implementation.attribute.AnnotationRetention;
+import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
+import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.utility.JavaModule;
 import trust.nccgroup.caldum.annotation.*;
+import trust.nccgroup.caldum.asm.DynamicFields;
 
 import java.lang.annotation.Annotation;
 import java.lang.instrument.Instrumentation;
@@ -39,8 +44,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-
+import static java.lang.ClassLoader.getSystemClassLoader;
 import static net.bytebuddy.matcher.ElementMatchers.*;
+import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public class PluggableAdviceAgent {
 
@@ -56,6 +62,7 @@ public class PluggableAdviceAgent {
 
     private ElementMatcher<?>[] ignoreMatchers = null;
 
+    private boolean test = false;
     private boolean debug = false;
     private boolean dump = false;
     private boolean dump_wrappers = false;
@@ -66,7 +73,8 @@ public class PluggableAdviceAgent {
 
     private Class<?> hookClass = null;
 
-    public Builder() { }
+    public Builder() {
+    }
 
     public Builder rawMatcher(AgentBuilder.RawMatcher _rawMatcher) {
       rawMatcher = _rawMatcher;
@@ -75,25 +83,25 @@ public class PluggableAdviceAgent {
 
     @SuppressWarnings("unchecked")
     public Builder typeMatcher(ElementMatcher<?> _typeMatcher) {
-      typeMatcher = (ElementMatcher<? super TypeDescription>)_typeMatcher;
+      typeMatcher = (ElementMatcher<? super TypeDescription>) _typeMatcher;
       return this;
     }
 
     @SuppressWarnings("unchecked")
     public Builder classLoaderMatcher(ElementMatcher<?> _classLoaderMatcher) {
-      classLoaderMatcher = (ElementMatcher<? super ClassLoader>)_classLoaderMatcher;
+      classLoaderMatcher = (ElementMatcher<? super ClassLoader>) _classLoaderMatcher;
       return this;
     }
 
     @SuppressWarnings("unchecked")
     public Builder moduleMatcher(ElementMatcher<?> _moduleMatcher) {
-      moduleMatcher = (ElementMatcher<? super JavaModule>)_moduleMatcher;
+      moduleMatcher = (ElementMatcher<? super JavaModule>) _moduleMatcher;
       return this;
     }
 
     @SuppressWarnings("unchecked")
     public Builder memberMatcher(ElementMatcher<?> _memberMatcher) {
-      memberMatcher = (ElementMatcher<? super MethodDescription>)_memberMatcher;
+      memberMatcher = (ElementMatcher<? super MethodDescription>) _memberMatcher;
       return this;
     }
 
@@ -119,6 +127,11 @@ public class PluggableAdviceAgent {
         );
       }
       return ab;
+    }
+
+    public Builder test(boolean _test) {
+      test = _test;
+      return this;
     }
 
     public Builder debug(boolean _debug) {
@@ -157,6 +170,7 @@ public class PluggableAdviceAgent {
 
       builder.hookClass(hook);
       builder.wrappers(h.wrappers());
+      builder.test(hook.getAnnotation(Test.class) != null);
       builder.debug(hook.getAnnotation(Debug.class) != null);
       builder.dump(hook.getAnnotation(Dump.class) != null);
       builder.dump_wrappers(hook.getAnnotation(DumpWrappers.class) != null);
@@ -227,20 +241,20 @@ public class PluggableAdviceAgent {
     private Builder matcher(Field field, Method method, Annotation anno, Object value) throws BuildException {
       try {
         if (anno instanceof Matcher.Type) {
-          typeMatcher((ElementMatcher<?>)value);
+          typeMatcher((ElementMatcher<?>) value);
         } else if (anno instanceof Matcher.Member) {
-          memberMatcher((ElementMatcher<?>)value);
+          memberMatcher((ElementMatcher<?>) value);
         } else if (anno instanceof Matcher.Raw) {
           rawMatcher((AgentBuilder.RawMatcher) value);
         } else if (anno instanceof Matcher.Loader) {
-          classLoaderMatcher((ElementMatcher<?>)value);
+          classLoaderMatcher((ElementMatcher<?>) value);
         } else if (anno instanceof Matcher.Module) {
-          moduleMatcher((ElementMatcher<?>)value);
+          moduleMatcher((ElementMatcher<?>) value);
         } else if (anno instanceof Matcher.Ignore) {
           if (value.getClass().isArray()) {
             ignoreMatchers((ElementMatcher<?>[]) value);
           } else {
-            ignoreMatchers(new ElementMatcher<?>[]{ (ElementMatcher<?>)value });
+            ignoreMatchers(new ElementMatcher<?>[]{(ElementMatcher<?>) value});
           }
         }
       } catch (ClassCastException cce) {
@@ -257,7 +271,11 @@ public class PluggableAdviceAgent {
       return this;
     }
 
-    public ResettableClassFileTransformer build(Instrumentation inst)
+    public ResettableClassFileTransformer build(Instrumentation inst) throws BuildException {
+      return build(inst, null);
+    }
+
+    public ResettableClassFileTransformer build(Instrumentation inst, Class<?> alreadyInjectedClass)
       throws BuildException {
       if (typeMatcher == null && rawMatcher == null) {
         throw new BuildException("no type matcher set");
@@ -295,13 +313,57 @@ public class PluggableAdviceAgent {
 
       byte[] alt_hook_bytes = null;
 
-      if (wrappers.length > 0 && wrappers[0] != void.class) {
-        DynamicType.Builder<?> dtb = new ByteBuddy()
-          .with(InstrumentedType.Factory.Default.FROZEN)
-          .with(Implementation.Context.Disabled.Factory.INSTANCE) // don't add method for static init
-          .with(AnnotationRetention.ENABLED)
-          .redefine(hookClass);
+      DynamicType.Builder<?> dtb = new ByteBuddy()
+        .with(InstrumentedType.Factory.Default.MODIFIABLE)
+        .with(Implementation.Context.Disabled.Factory.INSTANCE) // don't add method for static init
+        .with(AnnotationRetention.ENABLED)
+        .redefine(hookClass);
 
+      //dtb = dtb.defineField(DYNVARS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+
+
+      if (alreadyInjectedClass != null || test) {
+        final Class<?> _alreadyInjectedClass = alreadyInjectedClass;
+        // add dynvar instrumentation to the to be injected class
+        dtb = dtb.visit(new AsmVisitorWrapper.ForDeclaredMethods()
+          .method(isAnnotatedWith(Advice.OnMethodEnter.class)
+              .or(ElementMatchers.isAnnotatedWith(Advice.OnMethodExit.class)),
+            new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
+              @Override
+              public MethodVisitor wrap(TypeDescription instrumentedType,
+                                        MethodDescription instrumentedMethod,
+                                        MethodVisitor methodVisitor,
+                                        Implementation.Context implementationContext,
+                                        TypePool typePool, int writerFlags, int readerFlags) {
+                return new DynamicFields(hookClass, _alreadyInjectedClass, instrumentedType, instrumentedMethod, methodVisitor);
+              }
+            }));
+
+        /*
+        // delete all fields and add all the ones from the existing one
+        if (alreadyInjectedClass != null) {
+          System.out.println("alreadyInjectedClass: " + alreadyInjectedClass);
+          dtb = dtb.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
+
+          alt_hook_bytes = dtb.make().getBytes();
+
+          dtb = new ByteBuddy()
+            .with(InstrumentedType.Factory.Default.MODIFIABLE)
+            .with(Implementation.Context.Disabled.Factory.INSTANCE) // don't add method for static init
+            .with(AnnotationRetention.ENABLED)
+            .redefine(hookClass, new WrappedClassFileLocator(hookClass.getName(), alt_hook_bytes));
+
+          for (Field f : alreadyInjectedClass.getDeclaredFields()) {
+            if (!DYNVARS.equals(f.getName())) {
+              //dtb = dtb.defineField(f.getName(), f.getType(), f.getModifiers());
+            }
+          }
+        }
+        */
+
+      }
+
+      if (wrappers.length > 0 && wrappers[0] != void.class) {
         for (Class<?> hook_wrapper : wrappers) {
           if (hook_wrapper == void.class) {
             continue;
@@ -324,8 +386,8 @@ public class PluggableAdviceAgent {
             }
           }
         }
-        alt_hook_bytes = dtb.make().getBytes();
       }
+      alt_hook_bytes = dtb.make().getBytes();
 
       AgentBuilder.Identified.Extendable abe;
 

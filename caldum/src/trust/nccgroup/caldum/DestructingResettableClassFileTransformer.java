@@ -99,6 +99,7 @@ public class DestructingResettableClassFileTransformer {
       try {
         field.set(null, null);
       } catch (IllegalAccessException ignored) { }
+        catch (IllegalArgumentException ignored) { }
     }
 
     return rcft.reset(inst, strat);
