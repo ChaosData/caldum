@@ -16,6 +16,8 @@ limitations under the License.
 
 package trust.nccgroup.caldum.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,14 +28,37 @@ public class TmpLogger {
 
   public static Logger DEFAULT = build("caldum");
 
+  private static String getTempDir() {
+    String tmpdir = System.getProperty("java.io.tmpdir");
+    if (tmpdir != null) {
+      return tmpdir;
+    }
+
+    String name = RandomHex.get(8);
+    try {
+      File temp = File.createTempFile(name, ".tmp");
+      String ppath = temp.getParentFile().getAbsolutePath();
+      if (temp.delete()) {
+        return ppath;
+      }
+      return ppath;
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
   public static Logger build(String name) {
+    return build(name, getTempDir());
+  }
+
+  public static Logger build(String name, String dir) {
     try {
       Logger logger = Logger.getLogger(name);
 
       logger.setUseParentHandlers(false);
       logger.setLevel(Level.INFO);
 
-      FileHandler fh = new FileHandler("/tmp/" + name + ".log", true);
+      FileHandler fh = new FileHandler(dir + "/" + name + ".log", true);
       fh.setFormatter(new SimpleFormatter());
 
       logger.addHandler(fh);
