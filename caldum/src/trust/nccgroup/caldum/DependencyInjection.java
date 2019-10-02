@@ -114,7 +114,7 @@ public class DependencyInjection {
       Field dynvars_field = target.getDeclaredField(DYNVARS);
       dynvars = (Map<String,Object>)dynvars_field.get(null);
     } catch (NoSuchFieldException ignored) {
-      ignored.printStackTrace();
+      //ignored.printStackTrace();
     } catch (IllegalAccessException ignored) {
       ignored.printStackTrace();
     }
@@ -177,7 +177,7 @@ public class DependencyInjection {
       Field dynvars_field = target.getDeclaredField(DYNVARS);
       dynvars = (Map<String,Object>)dynvars_field.get(null);
     } catch (NoSuchFieldException ignored) {
-      ignored.printStackTrace();
+      //ignored.printStackTrace();
     } catch (IllegalAccessException ignored) {
       ignored.printStackTrace();
     }

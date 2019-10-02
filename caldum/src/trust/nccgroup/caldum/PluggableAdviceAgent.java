@@ -43,6 +43,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashSet;
+import java.util.Set;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
 import static net.bytebuddy.matcher.ElementMatchers.*;
@@ -319,10 +321,12 @@ public class PluggableAdviceAgent {
         .with(AnnotationRetention.ENABLED)
         .redefine(hookClass);
 
+      // this is moved to DynVarsAgent
       //dtb = dtb.defineField(DYNVARS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
 
 
       if (alreadyInjectedClass != null || test) {
+        /* // remove for now
         final Class<?> _alreadyInjectedClass = alreadyInjectedClass;
         // add dynvar instrumentation to the to be injected class
         dtb = dtb.visit(new AsmVisitorWrapper.ForDeclaredMethods()
@@ -338,14 +342,24 @@ public class PluggableAdviceAgent {
                 return new DynamicFields(hookClass, _alreadyInjectedClass, instrumentedType, instrumentedMethod, methodVisitor);
               }
             }));
+        */
 
-        /*
         // delete all fields and add all the ones from the existing one
         if (alreadyInjectedClass != null) {
           System.out.println("alreadyInjectedClass: " + alreadyInjectedClass);
-          dtb = dtb.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
+          //dtb = dtb.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
 
-          alt_hook_bytes = dtb.make().getBytes();
+          /* // remove for now
+          Set<String> previousFields = new HashSet<String>();
+          for (Field pf : alreadyInjectedClass.getDeclaredFields()) {
+            previousFields.add(pf.getName());
+          }
+          previousFields.add(DYNVARS);
+
+          dtb = dtb.visit(new MemberRemoval().stripFields(not(anyOf(previousFields.toArray()))));
+          */
+
+          /*alt_hook_bytes = dtb.make().getBytes();
 
           dtb = new ByteBuddy()
             .with(InstrumentedType.Factory.Default.MODIFIABLE)
@@ -357,9 +371,9 @@ public class PluggableAdviceAgent {
             if (!DYNVARS.equals(f.getName())) {
               //dtb = dtb.defineField(f.getName(), f.getType(), f.getModifiers());
             }
-          }
+          }*/
         }
-        */
+
 
       }
 

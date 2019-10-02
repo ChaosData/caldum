@@ -68,7 +68,7 @@ public class NoRecursionTestHook {
   }
 
   @Hook(wrappers = { NoRecursion.class })
-  @Dump
+  //@Dump
   public static class NoRecursion2Wrapper {
 
     public static class Settings {
@@ -92,7 +92,7 @@ public class NoRecursionTestHook {
   }
 
   @Hook(wrappers = { NoSelfRecursion.class })
-  @Dump
+  //@Dump
   public static class NoSelfRecursionWrapper {
 
     public static class Settings {

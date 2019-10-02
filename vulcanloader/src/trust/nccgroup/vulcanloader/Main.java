@@ -18,8 +18,10 @@ package trust.nccgroup.vulcanloader;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Locale;
 
 import com.sun.tools.attach.VirtualMachine;
+//import net.bytebuddy.agent.VirtualMachine;
 import org.wikibooks.Base64;
 
 class Main {
@@ -114,6 +116,13 @@ class Main {
     send(pid, encodedPathAgentArgs);
   }
 
+  /*
+  private static Class<? extends VirtualMachine> get() {
+    return System.getProperty("java.vm.vendor").toUpperCase(Locale.US).contains("J9")
+      ? VirtualMachine.ForOpenJ9.class
+      : VirtualMachine.ForHotSpot.class;
+  }*/
+
   private static void send(String pid, String encodedPathAgentArgs) {
     try {
       String path = Main.class
@@ -122,6 +131,10 @@ class Main {
         .getLocation()
         .getPath();
       VirtualMachine vm = VirtualMachine.attach(pid);
+      // the following relies on JNA garbage
+      /*VirtualMachine vm = (VirtualMachine) get() //VirtualMachine.Resolver.INSTANCE.run()
+        .getMethod("attach", String.class)
+        .invoke(null, pid);*/
       vm.loadAgent(path, encodedPathAgentArgs);
       vm.detach();
     } catch (Exception e) {

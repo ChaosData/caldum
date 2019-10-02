@@ -27,7 +27,7 @@ dependencies {
   compile fileTree(include: ['*.jar'], dir: 'lib')
 
   compileOnly group: 'trust.nccgroup', name: 'caldum', version: '1.0.0'
-  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.9.10'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '1.10.1'
 
   testCompile group: 'junit', name: 'junit', version: '4.12'
   testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.1.2.RELEASE'
@@ -66,6 +66,11 @@ jar {
   }
 }
 
+//shadowJar {
+//  baseName = 'java89'
+//  version = null
+//}
+
 test {
   include "**/RunAllTests.class"
 }
@@ -76,6 +81,19 @@ task testJar(type: ShadowJar) {
  from sourceSets.test.output
  configurations = [project.configurations.testRuntime]
 }
+
+
+// newer gradle breaks how classifiers are handled.
+//   while they properly result in the right file being created,
+//   the task output file paths gradle passes on to plugins is wrong
+//   and forces the default -all classifier even if overridden
+shadowJar {
+  //archiveName = "java89.${extension}"
+  // removes -all from the build
+  //classifier = ''
+  //archiveClassifier.set('')
+}
+
 
 defaultTasks "shadowJar"
              //, "caldum-vl-embed"

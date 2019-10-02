@@ -27,6 +27,7 @@ public class AgentEntry {
   public static Logger logger = null;
 
   public static void agentmain(String agentArgs, Instrumentation _inst) {
+    System.out.println("running agentmain");
     setup(agentArgs, _inst);
   }
 
@@ -41,6 +42,6 @@ public class AgentEntry {
   }
 
   public static void unload() {
-
+    System.out.println("java89 unloading...");
   }
 }

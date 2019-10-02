@@ -29,8 +29,11 @@ class EmbeddedAgentPlugin implements Plugin<Project> {
 
 
       doLast {
-        def bbver = project.configurations.compileOnly.files.find { it.getName().startsWith("byte-buddy-")}.getParentFile().getParentFile().getName()
-        def cvlver = project.configurations.compileOnly.files.find { it.getName().startsWith("caldum-")}.getParentFile().getName()
+        def bbver = project.configurations.compileOnly.files.find { it.getName().startsWith("byte-buddy-") }.getParentFile().getParentFile().getName()
+        def cvlver = project.configurations.compileOnly.files.find { it.getName().startsWith("caldum-") }.getParentFile().getName()
+        println(project.configurations.compileOnly.files)
+        println(bbver)
+        println(cvlver)
 
         java.nio.file.Path tmpdir = Files.createTempDirectory("vl")
         java.nio.file.Path build_gradle = tmpdir.resolve("build.gradle")
@@ -146,6 +149,9 @@ defaultTasks 'shadowJar'
 
     project.tasks['caldum-vl-embed'].dependsOn(project.tasks.shadowJar)
     project.tasks['test'].dependsOn(project.tasks['caldum-vl-embed'])
+
+    //println(project.tasks.shadowJar.outputs.files.getFiles())
+    //println(project.tasks['caldum-vl-embed'].outputs.files.getFiles())
 
     String finaljarpath = project.tasks['caldum-vl-embed'].outputs.files[0]
     String javaagent = '-javaagent:' + finaljarpath

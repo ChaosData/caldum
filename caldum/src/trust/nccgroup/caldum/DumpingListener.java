@@ -13,6 +13,7 @@ import net.bytebuddy.implementation.bytecode.Throw;
 import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.utility.JavaModule;
 import net.bytebuddy.utility.JavaType;
+import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.FileOutputStream;
 import java.io.PrintStream;
@@ -28,11 +29,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static net.bytebuddy.matcher.ElementMatchers.named;
 import static net.bytebuddy.matcher.ElementMatchers.takesArgument;
 
 public class DumpingListener extends AgentBuilder.Listener.StreamWriting implements AgentBuilder.TransformerDecorator {
+
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   public static class OriginalDumpingClassFileTransformer implements ResettableClassFileTransformer {
 
@@ -134,37 +139,50 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy) {
+      logger.log(Level.SEVERE, "reset:a");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy);
     }
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.BatchAllocator redefinitionBatchAllocator) {
+      logger.log(Level.SEVERE, "reset:b");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy, redefinitionBatchAllocator);
     }
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.DiscoveryStrategy redefinitionDiscoveryStrategy) {
+      logger.log(Level.SEVERE, "reset:c");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy, redefinitionDiscoveryStrategy);
     }
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.BatchAllocator redefinitionBatchAllocator, AgentBuilder.RedefinitionStrategy.DiscoveryStrategy redefinitionDiscoveryStrategy) {
+      logger.log(Level.SEVERE, "reset:d");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy, redefinitionBatchAllocator, redefinitionDiscoveryStrategy);
     }
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.DiscoveryStrategy redefinitionDiscoveryStrategy, AgentBuilder.RedefinitionStrategy.Listener redefinitionListener) {
+      logger.log(Level.SEVERE, "reset:e");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy, redefinitionDiscoveryStrategy, redefinitionListener);
     }
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.BatchAllocator redefinitionBatchAllocator, AgentBuilder.RedefinitionStrategy.Listener redefinitionListener) {
+      logger.log(Level.SEVERE, "reset:f");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy, redefinitionBatchAllocator, redefinitionListener);
     }
 
     @Override
     public boolean reset(Instrumentation instrumentation, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.DiscoveryStrategy redefinitionDiscoveryStrategy, AgentBuilder.RedefinitionStrategy.BatchAllocator redefinitionBatchAllocator, AgentBuilder.RedefinitionStrategy.Listener redefinitionListener) {
+      logger.log(Level.SEVERE, "reset:g");
       return classFileTransformer.reset(instrumentation, redefinitionStrategy, redefinitionDiscoveryStrategy, redefinitionBatchAllocator, redefinitionListener);
+    }
+
+    @Override
+    public boolean reset(Instrumentation instrumentation, ResettableClassFileTransformer resettableClassFileTransformer, AgentBuilder.RedefinitionStrategy redefinitionStrategy, AgentBuilder.RedefinitionStrategy.DiscoveryStrategy discoveryStrategy, AgentBuilder.RedefinitionStrategy.BatchAllocator batchAllocator, AgentBuilder.RedefinitionStrategy.Listener listener) {
+      logger.log(Level.SEVERE, "reset:h");
+      return classFileTransformer.reset(instrumentation, resettableClassFileTransformer, redefinitionStrategy, discoveryStrategy, batchAllocator, listener);
     }
   }
 

@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.util.concurrent.SettableFuture;
+import trust.nccgroup.caldumtest.PausedMain;
+
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -54,19 +56,22 @@ public class SpringTest {
 
   @Test
   public void startspring() throws Throwable {
-    MyApplication.main(new String[]{});
+    MyApplication.main();
 
-    OkHttpClient c = new OkHttpClient();
-    Request req = new Request.Builder()
-      .url("http://127.0.0.1:8080/test?name=zzzzz")
-      .build();
     String resText = null;
-    try {
-      Response res = c.newCall(req).execute();
-      resText = res.body().string();
-    } catch (Throwable t) {
-      t.printStackTrace();
-      fail("unknown error");
+    for (int i=0; i<3; i++) {
+      OkHttpClient c = new OkHttpClient();
+      Request req = new Request.Builder()
+        .url("http://127.0.0.1:8084/test?name=zzzzz")
+        .build();
+      try {
+        Response res = c.newCall(req).execute();
+        resText = res.body().string();
+      } catch (Throwable t) {
+        t.printStackTrace();
+        fail("unknown error");
+      }
+      PausedMain.pause("" + (7778 + i));
     }
 
     try {
@@ -143,9 +148,19 @@ public class SpringTest {
   @Configuration
   @EnableAutoConfiguration
   static class MyApplication {
-    public static void main(String[] fakeargv) {
+    public static void main() {
       System.setProperty("server.address", "127.0.0.1");
-      SpringApplication.run(MyApplication.class, fakeargv);
+      System.setProperty("server.port", "8084");
+      System.setProperty("logging.level.org.springframework.web", "OFF");
+      System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
+      System.setProperty("logging.pattern.console", "");
+      SpringApplication.run(MyApplication.class, new String[]{
+        "--logging.level.org.springframework.web=OFF",
+        "--logging.level.org.springframework.boot=OFF",
+        "--logging.level.root=OFF",
+        "--spring.main.banner-mode=OFF",
+        "--logging.level.org.springframework=OFF"
+      });
     }
 
     @RestController

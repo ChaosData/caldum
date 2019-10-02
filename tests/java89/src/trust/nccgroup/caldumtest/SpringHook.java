@@ -45,7 +45,7 @@ public class SpringHook {
   static Instrumentation inst = null;
 
   @Hook(wrappers = { NoRecursion.class })
-  @DumpWrappers
+  //@DumpWrappers
   public static class HttpServeletRequestGetRequestURIWrapper {
 
     public static class Settings {
@@ -54,6 +54,8 @@ public class SpringHook {
 
       @Type
       static ElementMatcher typeMatcher() {
+        System.out.println("typeMatcher!!!!!!");
+
         //TypePool tp = TypePool.Default.ofClassPath();
         TypePool tp = TypePool.Default.ofSystemLoader();
         try {
@@ -150,7 +152,10 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
   }
 
   @Hook(wrappers = { NoRecursion.class })
+  //@Dump
   public static class RequestParamInterceptor {
+
+    public static String sss = "s-";
 
     public static class Settings {
       @Type
@@ -168,6 +173,8 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
 
     @OnMethodEnter
     static String enter(@Origin Class c, @Origin Method m, @This Object self, @Argument(value=0) String name) {
+      System.out.println("v6");
+
       /*try {
         String cn = c == null ? "(null)" : c.getName();
         String mn = m == null ? "(null)" : m.getName();
@@ -177,6 +184,8 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
       } catch (Throwable t) {
         t.printStackTrace();
       }*/
+
+      sss = sss + "s";
 
       if ("name".equals(name)) {
         return name;
@@ -196,6 +205,7 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
 
       String r = (String)ret;
       if ("zzzzz".equals(r)) {
+        System.out.println(sss);
         ret = "caldum";
       }
     }

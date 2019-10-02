@@ -116,7 +116,7 @@ public final class HookProcessor {
           System.out.println("old.getClassLoader(): " + old.getClassLoader());
         }
       } catch (ClassNotFoundException cnfe) {
-        // don't add dynvar instrumentation since it's the first time
+        // don't add dynvar instrumentation since it's the first time // ???
       }
 
       Class<?> injectedhooks[] = new Class<?>[]{null,null};
@@ -128,7 +128,12 @@ public final class HookProcessor {
       } catch (IOException e) {
         logger.log(Level.SEVERE, "failed (IO error) to swap/inject class: " + hook.getName(), e);
         continue;
+      } catch (Throwable t) {
+        System.out.println("??? " + hook.getName());
+        logger.log(Level.SEVERE, "??? failed to swap/inject class: " + hook.getName(), t);
+        throw new RuntimeException(t);
       }
+      System.out.println("\"successfully\" (w/o exception) swap/injected: " + hook);
 
       if (injectedhooks[1] == null) {
         logger.log(Level.SEVERE, "failed (unknown error) to swap/inject class: " + hook.getName());

@@ -18,6 +18,7 @@ package trust.nccgroup.caldum;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
+import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DestructingResettableClassFileTransformer {
@@ -35,6 +37,8 @@ public class DestructingResettableClassFileTransformer {
   private Class<?> loaded;
 
   private static Class<?> autoclosable;
+
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   static {
     try {
@@ -102,7 +106,11 @@ public class DestructingResettableClassFileTransformer {
         catch (IllegalArgumentException ignored) { }
     }
 
-    return rcft.reset(inst, strat);
+    boolean ret = rcft.reset(inst, strat);
+    if (!ret) {
+      logger.log(Level.SEVERE, "reset failed: loaded: " + loaded + ", rcft: " + rcft);
+    }
+    return ret;
   }
 
 

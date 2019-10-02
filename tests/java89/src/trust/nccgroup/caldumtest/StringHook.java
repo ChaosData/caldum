@@ -41,8 +41,8 @@ public class StringHook {
   static Instrumentation inst = null;
 
   @Hook
-  @Dump
-  @DumpWrappers
+  //@Dump
+  //@DumpWrappers
   //@Test
   public static class GetBytesWrapper {
 
@@ -64,7 +64,7 @@ public class StringHook {
 
     public static long iii = 5555L;
 
-    @Dump
+    //@Dump
     public static Long III = 5555L;
     public static Map foobar = null;
 

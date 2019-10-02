@@ -294,7 +294,7 @@ public final class AgentLoader {
   private static synchronized boolean unloadAgent(AgentHolder ah, String path) {
     assert logger != null;
 
-    logger.info(String.format("Unloading agent: %s.", path));
+    logger.info(String.format("Unloading agent: %s (ah.rcfts.size(): %d).", path, ah.rcfts.size()));
 
     boolean ret = false;
 
@@ -325,6 +325,8 @@ public final class AgentLoader {
           agent.getName(), path
         ), nsme);
       }
+    } else {
+      logger.log(SEVERE, "ah.agentClass == null");
     }
 
     if (ah.rcfts != null) {
@@ -332,7 +334,10 @@ public final class AgentLoader {
       ArrayList<DestructingResettableClassFileTransformer> nrcfts = new ArrayList<DestructingResettableClassFileTransformer>();
       for (int i=0; i < ah.rcfts.size(); i++) {
         DestructingResettableClassFileTransformer rcft = ah.rcfts.remove(0);
+        logger.log(SEVERE, "rcft: " + rcft);
         if (!rcft.reset(ah.inst, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)) {
+          // currently failing on the @Debug/@Dump annotated magic listener/wrapper class
+          logger.log(SEVERE, "rcft.reset(): failed");
           ret = false;
           nrcfts.add(rcft);
         }
@@ -340,6 +345,7 @@ public final class AgentLoader {
       ah.rcfts = nrcfts;
     } else {
       //System.out.println("ah.rcfts == null");
+      logger.log(SEVERE, "ah.rcfts == null");
     }
     return ret;
   }
