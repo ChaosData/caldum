@@ -131,6 +131,32 @@ public final class HookProcessor {
       } catch (Throwable t) {
         System.out.println("??? " + hook.getName());
         logger.log(Level.SEVERE, "??? failed to swap/inject class: " + hook.getName(), t);
+        if (t instanceof java.lang.UnsupportedOperationException) {
+          logger.log(Level.SEVERE, "failed class fields: " + hook.getName());
+          int counter = 0;
+          for (Field f : hook.getDeclaredFields()) {
+            counter += 1;
+            logger.log(Level.SEVERE, "" + counter + " - " + f.toString());
+          }
+          try {
+            Class<?> old = getSystemClassLoader().getParent().loadClass(hook.getName());
+            if (old.getClassLoader() == null) {
+              logger.log(Level.SEVERE, "currently loaded class: " + old);
+              counter = 0;
+              for (Field f : old.getDeclaredFields()) {
+                counter += 1;
+                logger.log(Level.SEVERE, "" + counter + " - " + f.toString());
+              }
+            } else {
+              logger.log(Level.SEVERE, "found in other classloader? " + old.toString());
+            }
+          } catch (ClassNotFoundException ignore) {
+            logger.log(Level.SEVERE, "not found in bootstrap classloader");
+          }
+
+
+        }
+
         throw new RuntimeException(t);
       }
       System.out.println("\"successfully\" (w/o exception) swap/injected: " + hook);
@@ -138,6 +164,15 @@ public final class HookProcessor {
       if (injectedhooks[1] == null) {
         logger.log(Level.SEVERE, "failed (unknown error) to swap/inject class: " + hook.getName());
         continue;
+      } else {
+        logger.log(Level.SEVERE, "loaded class: " + hook.getName());
+        for (Field f : hook.getDeclaredFields()) {
+          logger.log(Level.SEVERE, "- " + f.toString());
+        }
+        logger.log(Level.SEVERE, "swapped/injected class: " + injectedhooks[1].getName());
+        for (Field f : injectedhooks[1].getDeclaredFields()) {
+          logger.log(Level.SEVERE, "- " + f.toString());
+        }
       }
 
       HashMap<String,Object> localProvides = new HashMap<String, Object>();

@@ -294,7 +294,8 @@ public final class AgentLoader {
   private static synchronized boolean unloadAgent(AgentHolder ah, String path) {
     assert logger != null;
 
-    logger.info(String.format("Unloading agent: %s (ah.rcfts.size(): %d).", path, ah.rcfts.size()));
+
+    logger.info(String.format("Unloading agent: %s (ah.rcfts.size(): %d).", path, ah.rcfts != null ? ah.rcfts.size() : -1));
 
     boolean ret = false;
 

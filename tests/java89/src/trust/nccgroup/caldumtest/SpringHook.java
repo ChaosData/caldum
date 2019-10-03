@@ -21,16 +21,14 @@ import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.description.type.TypeDescription;
 
-import trust.nccgroup.caldum.annotation.Debug;
-import trust.nccgroup.caldum.annotation.Dump;
-import trust.nccgroup.caldum.annotation.DumpWrappers;
-import trust.nccgroup.caldum.annotation.Hook;
-import trust.nccgroup.caldum.annotation.Matcher;
+import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.wrappers.*;
 
 import java.lang.instrument.Instrumentation;
 import java.util.Arrays;
 import java.lang.reflect.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 import static net.bytebuddy.asm.Advice.*;
@@ -152,10 +150,14 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
   }
 
   @Hook(wrappers = { NoRecursion.class })
+  @Dynamic
   //@Dump
   public static class RequestParamInterceptor {
 
     public static String sss = "s-";
+//    public static String sss2 = "z-";
+    public static String zzz = "GGGG";
+    public static Map<String,Object> foomap = new HashMap<String,Object>();
 
     public static class Settings {
       @Type
@@ -173,7 +175,11 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
 
     @OnMethodEnter
     static String enter(@Origin Class c, @Origin Method m, @This Object self, @Argument(value=0) String name) {
-      System.out.println("v6");
+      // 03:19:14.077 [http-nio-127.0.0.1-8084-exec-2] DEBUG org.springframework.web.servlet.DispatcherServlet
+      // - Failed to complete request: org.springframework.web.util.NestedServletException: Handler dispatch failed;
+      // nested exception is java.lang.NoSuchFieldError: sss
+
+      System.out.println("v2");
 
       /*try {
         String cn = c == null ? "(null)" : c.getName();
@@ -186,6 +192,9 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
       }*/
 
       sss = sss + "s";
+//      sss2 = sss2 + "z";
+
+      //String f = (String)foomap.get("zzz");
 
       if ("name".equals(name)) {
         return name;
@@ -206,6 +215,7 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
       String r = (String)ret;
       if ("zzzzz".equals(r)) {
         System.out.println(sss);
+        //System.out.println(sss + sss2);
         ret = "caldum";
       }
     }

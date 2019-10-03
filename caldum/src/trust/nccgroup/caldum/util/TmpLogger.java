@@ -30,21 +30,23 @@ public class TmpLogger {
 
   private static String getTempDir() {
     String tmpdir = System.getProperty("java.io.tmpdir");
-    if (tmpdir != null) {
-      return tmpdir;
-    }
-
-    String name = RandomHex.get(8);
-    try {
-      File temp = File.createTempFile(name, ".tmp");
-      String ppath = temp.getParentFile().getAbsolutePath();
-      if (temp.delete()) {
-        return ppath;
+    if (tmpdir == null) {
+      String name = RandomHex.get(8);
+      try {
+        File temp = File.createTempFile(name, ".tmp");
+        tmpdir = temp.getParentFile().getAbsolutePath();
+        if (temp.delete()) {
+          //ignore
+        }
+      } catch (IOException e) {
+        return null;
       }
-      return ppath;
-    } catch (IOException e) {
-      return null;
     }
+    // osx tmp folders are annoying to deal w/, just use /tmp
+    if (tmpdir.startsWith("/var/folders/")) {
+      tmpdir = "/tmp/";
+    }
+    return tmpdir;
   }
 
   public static Logger build(String name) {
@@ -54,6 +56,7 @@ public class TmpLogger {
   public static Logger build(String name, String dir) {
     try {
       Logger logger = Logger.getLogger(name);
+      System.out.println("setting up logger at " + dir + "/" + name + ".log");
 
       logger.setUseParentHandlers(false);
       logger.setLevel(Level.INFO);
