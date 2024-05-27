@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+set -x
 
 SCRIPT=$0
 cd `dirname $SCRIPT`

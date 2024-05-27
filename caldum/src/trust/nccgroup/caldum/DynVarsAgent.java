@@ -54,7 +54,7 @@ public class DynVarsAgent {
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
-      .with(new AgentBuilder.Listener.StreamWriting(System.err));
+      //.with(new AgentBuilder.Listener.StreamWriting(System.err));
       ;
 
     AgentBuilder.Identified.Narrowable abn = ab.type(

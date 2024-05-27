@@ -37,8 +37,10 @@ public class StringHookTest {
 
   @Test
   public void unsecret() {
+    //test for StringHook
     assertArrayEquals("__notsecret__".getBytes(), "__secret__".getBytes());
 
+    //test for StringHook @Dump
     try {
       RandomAccessFile f = new RandomAccessFile("./java.lang.String.pre.class", "r");
       byte[] b = new byte[(int)f.length()];

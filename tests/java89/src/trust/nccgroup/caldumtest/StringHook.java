@@ -41,7 +41,7 @@ public class StringHook {
   static Instrumentation inst = null;
 
   @Hook
-  //@Dump
+  @Dump
   //@DumpWrappers
   //@Test
   public static class GetBytesWrapper {

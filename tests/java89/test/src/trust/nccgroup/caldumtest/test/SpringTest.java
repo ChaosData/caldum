@@ -56,7 +56,9 @@ public class SpringTest {
 
   @Test
   public void startspring() throws Throwable {
+    System.out.println("startspring called");
     MyApplication.main();
+    System.out.println("startspring - post MyApplication.main()");
 
     String resText = null;
     for (int i=0; i<3; i++) {
@@ -71,7 +73,7 @@ public class SpringTest {
         t.printStackTrace();
         fail("unknown error");
       }
-      PausedMain.pause("" + (7778 + i));
+      //PausedMain.pause("" + (7778 + i));
     }
 
     try {
@@ -101,6 +103,7 @@ public class SpringTest {
       t.printStackTrace();
     }*/
 
+    //test for SpringHook @DumpWrappers
     byte [] wrapped_pattern_bytes = "java/lang/Thread".getBytes();
     try {
       RandomAccessFile f = new RandomAccessFile("./trust.nccgroup.caldumtest.SpringHook$HttpServeletRequestGetRequestURIWrapper.class", "r");

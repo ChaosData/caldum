@@ -43,7 +43,7 @@ public class SpringHook {
   static Instrumentation inst = null;
 
   @Hook(wrappers = { NoRecursion.class })
-  //@DumpWrappers
+  @DumpWrappers
   public static class HttpServeletRequestGetRequestURIWrapper {
 
     public static class Settings {
@@ -150,7 +150,7 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
   }
 
   @Hook(wrappers = { NoRecursion.class })
-  @Dynamic
+  //@Dynamic
   //@Dump
   public static class RequestParamInterceptor {
 

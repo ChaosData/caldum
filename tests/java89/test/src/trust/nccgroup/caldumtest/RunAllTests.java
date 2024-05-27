@@ -1,5 +1,6 @@
 package trust.nccgroup.caldumtest;
 
+import org.junit.After;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import trust.nccgroup.caldumtest.test.*;
@@ -12,4 +13,12 @@ import trust.nccgroup.caldumtest.test.*;
   NoRecursionTest.class,
   SpringTest.class,
 })
-public class RunAllTests {}
+public class RunAllTests {
+
+    @After
+    public void doAfter() {
+        System.out.println("doAfter called()");
+        //System.exit(0);
+    }
+
+}

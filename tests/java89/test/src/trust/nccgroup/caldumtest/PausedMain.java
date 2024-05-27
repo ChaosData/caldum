@@ -8,7 +8,7 @@ import org.junit.runner.JUnitCore;
 public class PausedMain {
 
   public static boolean pause(String port) {
-
+    System.out.println("PausedMain.pause called");
     try {
       if (!"run".equals(port)) {
         System.out.println("listening on port " + port);

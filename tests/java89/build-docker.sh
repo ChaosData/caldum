@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+set -x
 
 SCRIPT=$0
 cd `dirname $SCRIPT`
@@ -24,4 +25,4 @@ fi
 docker run --rm \
   -v "${CALDUMDIR}:/caldum" \
   -v "${CALDUMDIR}/build/m2:/root/.m2" -v "${CALDUMDIR}/build/gradle:/root/.gradle" \
-  -w "/caldum/tests/test89" "${BUILD_IMAGE}" "./build.sh"
+  -w "/caldum/tests/java89" "${BUILD_IMAGE}" "./build.sh"
