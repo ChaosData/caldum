@@ -308,7 +308,8 @@ public class PluggableAdviceAgent {
 
       if (debug || dump) {
         dl = new DumpingListener(debug ? System.out : null, dump, rawMatcher, inst);
-        ab = ab.with(dl);
+        ab = ab.with((AgentBuilder.Listener)dl);
+        ab = ab.with((AgentBuilder.TransformerDecorator)dl);
       }
       abn = ab.type(rawMatcher);
 
@@ -418,11 +419,11 @@ public class PluggableAdviceAgent {
           new AdviceTransformer(hookClass, alt_hook_bytes, memberMatcher)
         );
       }
-      if (dump) {
-        return abe.installOn(inst, dl);
-      } else {
+      //if (dump) {
+      //  return abe.installOn(inst, dl);
+      //} else {
         return abe.installOn(inst);
-      }
+      //}
 
     }
 

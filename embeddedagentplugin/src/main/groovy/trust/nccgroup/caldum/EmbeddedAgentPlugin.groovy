@@ -43,11 +43,12 @@ apply plugin: 'java'
 
 buildscript {
   repositories {
-    jcenter()
+    //jcenter()
+    gradlePluginPortal()
   }
 
   dependencies {
-    classpath 'com.github.jengelman.gradle.plugins:shadow:+'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
   }
 }
 

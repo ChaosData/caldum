@@ -2,13 +2,17 @@ apply plugin: 'java'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
+
+
 buildscript {
   repositories {
-    jcenter()
+    //jcenter()
+    gradlePluginPortal()
   }
 
   dependencies {
-    classpath 'com.github.jengelman.gradle.plugins:shadow:+'
+    //classpath 'com.github.jengelman.gradle.plugins:shadow:+'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
   }
 }
 
@@ -26,6 +30,8 @@ repositories {
   mavenCentral()
 }
 
+String bbver = new File(projectDir.getAbsolutePath() + "/../caldum/bbver.txt").getText('UTF-8').strip()
+
 dependencies {
   // for tools.jar on jdk < 9
   if (project.hasProperty('no-tools')) {
@@ -34,7 +40,8 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'tools')
   }
 
-  compile group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.6, 1.11)'
+  compile group: 'net.bytebuddy', name: 'byte-buddy', version: bbver
+  //compile group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.6, 1.11)'
   //compile group: 'net.bytebuddy', name: 'byte-buddy -agent', version: '[1.9.6, 1.11)'
 
   // currently relies on ./gradlew from ../caldum for local maven cache

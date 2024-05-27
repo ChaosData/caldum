@@ -7,13 +7,14 @@ version = '1.0.0'
 description = """Caldum VulcanLoader Embedding Plugin"""
 
 repositories {
-  jcenter()
+  //jcenter()
+  gradlePluginPortal()
 }
 
 dependencies {
   implementation gradleApi()
   implementation localGroovy()
-  compile group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '+'
+  compile group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '5.2.0'
 
 }
 

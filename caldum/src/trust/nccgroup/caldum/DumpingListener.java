@@ -24,10 +24,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -93,8 +90,13 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
                             Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain,
                             byte[] classfileBuffer) {
-      return transform(null, loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
+      return transform((Object)null, loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
     }
+
+//    @Override
+//    public byte[] transform(Module module, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+//      return transform((Object)module, loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
+//    }
 
     protected byte[] transform(Object rawModule,
                                ClassLoader loader,
@@ -135,6 +137,11 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
         t.printStackTrace();
       }
       return null;
+    }
+
+    @Override
+    public Iterator<AgentBuilder.Transformer> iterator(TypeDescription typeDescription, ClassLoader classLoader, JavaModule javaModule, Class<?> aClass, ProtectionDomain protectionDomain) {
+      return classFileTransformer.iterator(typeDescription, classLoader, javaModule, aClass, protectionDomain);
     }
 
     @Override

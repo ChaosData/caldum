@@ -190,7 +190,7 @@ public class BootstrapSwapInjector {
     //picks up the dynvars transformation, the default uses the original classfile
     //also worth noting that the injection doesn't go through the standard instrumentation passes
     //  so we can't just apply the modifications there
-    cs.put(td, ClassFileLocator.AgentBased.of(inst, current).locate(current.getName()).resolve());
+    cs.put(td, ClassFileLocator.ForInstrumentation.of(inst, current).locate(current.getName()).resolve());
     //cs.put(td, ClassFileLocator.ForClassLoader.read(current));
 
     File temp = TmpDir.create();

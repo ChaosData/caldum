@@ -15,8 +15,11 @@ repositories {
   mavenCentral()
 }
 
+String bbver = new File(projectDir.getAbsolutePath() + "/bbver.txt").getText('UTF-8').strip()
+
 dependencies {
-  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.6, 1.11)'
+  //compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: '[1.9.6, 1.11)'
+  compileOnly group: 'net.bytebuddy', name: 'byte-buddy', version: bbver
   //compile group: 'org.xeustechnologies', name: 'jcl-core', version: '2.4'
 }
 
