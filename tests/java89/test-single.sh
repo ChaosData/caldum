@@ -19,10 +19,14 @@ IMAGE=$2
 cd "${SCRIPTDIR}"
 
 if [ "$TEST" = "premain" ]; then
-  docker run --rm -it -v "${SCRIPTDIR}/build:/build:ro" "${IMAGE}" \
+  docker run --rm -it \
+    -v "${SCRIPTDIR}/workdir:/workdir" \
+    -v "${SCRIPTDIR}/build:/build:ro" \
+    -w /workdir \
+    "${IMAGE}" \
     java -javaagent:/build/libs/java89-all-vl.jar -cp /build/libs/java89-tests.jar org.junit.runner.JUnitCore trust.nccgroup.caldumtest.RunAllTests
 elif [ "$TEST" = "agentmain" ]; then
-  docker run --rm -it -v "${SCRIPTDIR}/build:/build:ro" "${IMAGE}" \
+  docker run --rm -it -w /caldum -v "${SCRIPTDIR}/build:/build:ro" "${IMAGE}" \
     sh -c 'java -cp /build/libs/java89-tests.jar trust.nccgroup.caldumtest.PausedMain 2>&1 > /tmp/log & MAIN_PID=$! ; \
     { \
       sleep 1 && \

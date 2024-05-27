@@ -113,7 +113,7 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
             }
           }
           return;
-        } else {
+        } else if (opcode == PUTSTATIC) {
           // we just don't support setting these things right now, so we just clear the value off the stack to NOP it.
           // getting an extra local variable to stash the double-sized values is complicated.
           if ("J".equals(desc)) {
@@ -138,7 +138,9 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
             return;
           }
         }
-      }
+      }/* else {
+        System.out.println(">> iclass != owner: " + iclass + " != " + owner + ", name: " + name + ", desc: " + desc);
+      }*/
     }
 
     super.visitFieldInsn(opcode, owner, name, desc);

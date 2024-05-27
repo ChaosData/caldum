@@ -150,8 +150,8 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
   }
 
   @Hook(wrappers = { NoRecursion.class })
-  //@Dynamic
-  //@Dump
+  @Dynamic
+  @Dump
   public static class RequestParamInterceptor {
 
     public static String sss = "s-";

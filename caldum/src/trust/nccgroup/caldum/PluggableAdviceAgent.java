@@ -25,6 +25,7 @@ import net.bytebuddy.asm.MemberRemoval;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
@@ -320,7 +321,7 @@ public class PluggableAdviceAgent {
         .with(InstrumentedType.Factory.Default.MODIFIABLE)
         .with(Implementation.Context.Disabled.Factory.INSTANCE) // don't add method for static init
         .with(AnnotationRetention.ENABLED)
-        .redefine(hookClass);
+        .redefine(hookClass, ClassFileLocator.ForInstrumentation.of(inst, hookClass));
 
       // this is moved to DynVarsAgent
       //dtb = dtb.defineField(DYNVARS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
@@ -387,16 +388,16 @@ public class PluggableAdviceAgent {
           Class<?>[] nested = hook_wrapper.getDeclaredClasses();
 
           if (nested.length == 0) {
-            dtb = dtb.visit(Advice.to(hook_wrapper).on(
+            dtb = dtb.visit(Advice.to(hook_wrapper, ClassFileLocator.ForInstrumentation.of(inst, hook_wrapper)).on(
               isMethod().and(isAnnotatedWith(Advice.OnMethodEnter.class).or(ElementMatchers.isAnnotatedWith(Advice.OnMethodExit.class)))
             ));
           } else {
             for (Class<?> nc : nested) {
               if (nc.getAnnotation(Wrapper.OnMethodEnter.class) != null) {
-                dtb = dtb.visit(Advice.to(nc).on(isMethod().and(isAnnotatedWith(Advice.OnMethodEnter.class))));
+                dtb = dtb.visit(Advice.to(nc, ClassFileLocator.ForInstrumentation.of(inst, nc)).on(isMethod().and(isAnnotatedWith(Advice.OnMethodEnter.class))));
               }
               if (nc.getAnnotation(Wrapper.OnMethodExit.class) != null) {
-                dtb = dtb.visit(Advice.to(nc).on(isMethod().and(isAnnotatedWith(Advice.OnMethodExit.class))));
+                dtb = dtb.visit(Advice.to(nc, ClassFileLocator.ForInstrumentation.of(inst, nc)).on(isMethod().and(isAnnotatedWith(Advice.OnMethodExit.class))));
               }
             }
           }
@@ -408,7 +409,7 @@ public class PluggableAdviceAgent {
 
       if (alt_hook_bytes == null) {
         abe = abn.transform(
-          new AdviceTransformer(hookClass, memberMatcher)
+          new AdviceTransformer(inst, hookClass, memberMatcher)
         );
       } else {
         if (dump_wrappers) {
@@ -446,10 +447,10 @@ public class PluggableAdviceAgent {
     AsmVisitorWrapper avw;
     //private ElementMatcher<? super MethodDescription> memberMatcher;
 
-    AdviceTransformer(Class<?> hookClass,
+    AdviceTransformer(Instrumentation inst, Class<?> hookClass,
                 ElementMatcher<? super MethodDescription> _memberMatcher) {
       //memberMatcher = _memberMatcher;
-      avw = Advice.to(hookClass).on(_memberMatcher);
+      avw = Advice.to(hookClass, ClassFileLocator.ForInstrumentation.of(inst, hookClass)).on(_memberMatcher);
     }
 
     AdviceTransformer(Class<?> hookClass, byte[] alt_hook_bytes,
