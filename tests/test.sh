@@ -23,7 +23,7 @@ BUILD_IMAGE="eclipse-temurin:11-jdk"
 VERSIONS="java89"
 if [ "$#" -ne "0" ]; then
   if [ "$#" -gt "1" ]; then
-    if [ "$2" = "==" ]; then
+    if [ "$2" = "--" ]; then
       VERSIONS="$1"
       shift 2
     fi
@@ -35,7 +35,7 @@ fi
 TESTS="premain agentmain"
 if [ "$#" -ne "0" ]; then
   if [ "$#" -gt "1" ]; then
-    if [ "$2" = "--" ]; then
+    if [ "$2" = "----" ]; then
       TESTS="$1"
       shift 2
     fi

@@ -23,8 +23,10 @@ if [ "$TEST" = "premain" ]; then
     -v "${SCRIPTDIR}/workdir:/workdir" \
     -v "${SCRIPTDIR}/build:/build:ro" \
     -w /workdir \
+    -p 127.0.0.1:5005:5005 \
     "${IMAGE}" \
     java -javaagent:/build/libs/java89-all-vl.jar -cp /build/libs/java89-tests.jar org.junit.runner.JUnitCore trust.nccgroup.caldumtest.RunAllTests
+#    java -javaagent:/build/libs/java89-all-vl.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -cp /build/libs/java89-tests.jar org.junit.runner.JUnitCore trust.nccgroup.caldumtest.RunAllTests
 elif [ "$TEST" = "agentmain" ]; then
   docker run --rm -it -w /caldum -v "${SCRIPTDIR}/build:/build:ro" "${IMAGE}" \
     sh -c 'java -cp /build/libs/java89-tests.jar trust.nccgroup.caldumtest.PausedMain 2>&1 > /tmp/log & MAIN_PID=$! ; \
