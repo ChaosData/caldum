@@ -37,6 +37,7 @@ sourceSets {
 
 compileJava {
   options.compilerArgs << '-Xlint:unchecked'
+  //options.compilerArgs << '-Xlint:deprecation'
 }
 
 task sourceJar(type: Jar) {

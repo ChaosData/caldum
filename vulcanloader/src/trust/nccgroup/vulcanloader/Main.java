@@ -17,11 +17,16 @@ limitations under the License.
 package trust.nccgroup.vulcanloader;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLEncoder;
 import java.util.Locale;
 
-import com.sun.tools.attach.VirtualMachine;
+///import com.sun.tools.attach.VirtualMachine;
 //import net.bytebuddy.agent.VirtualMachine;
+import com.sun.tools.attach.VirtualMachine;
 import org.wikibooks.Base64;
 
 class Main {
@@ -123,6 +128,36 @@ class Main {
       : VirtualMachine.ForHotSpot.class;
   }*/
 
+  private static Class<?> virtualMachine = null;
+  private static Class<?> getVirtualMachine() {
+    if (virtualMachine != null) {
+      return virtualMachine;
+    }
+
+    //note: openj9 emulates com.sun.tools.attach.VirtualMachine, so we only have to look for that
+    String className = "com.sun.tools.attach.VirtualMachine";
+    Class<?> clazz = null;
+    try {
+      clazz = Class.forName(className);
+    } catch (ClassNotFoundException cnfe) { }
+    if (clazz == null) {
+      // $JAVA_HOME/lib/tools.jar
+      String home = System.getProperty("java.home");
+      String url = "file://" + home + "/../lib/tools.jar";
+      try {
+        URL[] urls = new URL[]{new URL(url)};
+        ClassLoader cl = new URLClassLoader(urls);
+        clazz = cl.loadClass(className);
+      } catch (MalformedURLException e) {
+        System.err.println("Error: Invalid tools.jar URL: " + url);
+      } catch (ClassNotFoundException e) {
+        System.err.println("Error: Could not find VirtualMachine class in tools.jar");
+        e.printStackTrace();
+      }
+    }
+    return clazz;
+  }
+
   private static void send(String pid, String encodedPathAgentArgs) {
     try {
       String path = Main.class
@@ -130,15 +165,35 @@ class Main {
         .getCodeSource()
         .getLocation()
         .getPath();
-      VirtualMachine vm = VirtualMachine.attach(pid);
-      // the following relies on JNA garbage
-      /*VirtualMachine vm = (VirtualMachine) get() //VirtualMachine.Resolver.INSTANCE.run()
-        .getMethod("attach", String.class)
-        .invoke(null, pid);*/
-      vm.loadAgent(path, encodedPathAgentArgs);
-      vm.detach();
-    } catch (Exception e) {
-      e.printStackTrace();
+
+      //note: by loading VirtualMachine directly this works on jdk >=9
+      try {
+        VirtualMachine vm0 = VirtualMachine.attach(pid);
+        vm0.loadAgent(path, encodedPathAgentArgs);
+        vm0.detach();
+        return;
+      } catch (NoClassDefFoundError ignore) { }
+
+      //note: for jdk <=8, we extract VirtualMachine out of the tools.jar.
+      //      this approach has issues on 17+ due to modules (terrible design btw),
+      //      so luckily it doesn't need to run on 17+.
+      Class<?> VirtualMachineClass = getVirtualMachine();
+      if (VirtualMachineClass == null) {
+        System.err.println("Error: Could not find VirtualMachine class");
+        return;
+      }
+      Method attach = VirtualMachineClass.getMethod("attach", String.class);
+      Object vm = attach.invoke(null, pid);
+
+      //note: there seem to be some weird issues in how openj9 jdk8 proxies com.sun.tools.attach.VirtualMachine
+      //      so we pull the loadAgent/detach methods out of the actual object returned from attach()
+      Method loadAgent = vm.getClass().getMethod("loadAgent", String.class, String.class);
+      Method detach = vm.getClass().getMethod("detach");
+
+      loadAgent.invoke(vm, path, encodedPathAgentArgs);
+      detach.invoke(vm);
+    } catch (Throwable t) {
+      t.printStackTrace();
     }
   }
 }

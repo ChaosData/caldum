@@ -52,7 +52,7 @@ public class SpringHook {
 
       @Type
       static ElementMatcher typeMatcher() {
-        System.out.println("typeMatcher!!!!!!");
+        //System.out.println("typeMatcher!!!!!!");
 
         //TypePool tp = TypePool.Default.ofClassPath();
         TypePool tp = TypePool.Default.ofSystemLoader();
@@ -179,7 +179,7 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
       // - Failed to complete request: org.springframework.web.util.NestedServletException: Handler dispatch failed;
       // nested exception is java.lang.NoSuchFieldError: sss
 
-      System.out.println("v2");
+      //System.out.println("v2");
 
       /*try {
         String cn = c == null ? "(null)" : c.getName();
@@ -214,7 +214,7 @@ Caused by: java.lang.LinkageError: loader (instance of  sun/misc/Launcher$AppCla
 
       String r = (String)ret;
       if ("zzzzz".equals(r)) {
-        System.out.println(sss);
+        //System.out.println(sss);
         //System.out.println(sss + sss2);
         ret = "caldum";
       }

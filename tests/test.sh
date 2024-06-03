@@ -42,15 +42,24 @@ if [ "$#" -ne "0" ]; then
   fi
 fi
 
+# openjdk:6-jdk
+# openjdk:7-jdk
+
+# eclipse-temurin:8-jdk
 # eclipse-temurin:11-jdk
 # eclipse-temurin:17-jdk
 # eclipse-temurin:21-jdk
+# ibm-semeru-runtimes:open-8-jdk
 # ibm-semeru-runtimes:open-11-jdk
 # ibm-semeru-runtimes:open-17-jdk
 # ibm-semeru-runtimes:open-21-jdk
 if [ "$#" -eq "0" ]; then
-  set -- "$@" "eclipse-temurin:11-jdk" "eclipse-temurin:17-jdk" "eclipse-temurin:21-jdk" \
-              "ibm-semeru-runtimes:open-11-jdk" "ibm-semeru-runtimes:open-17-jdk" "ibm-semeru-runtimes:open-21-jdk"
+  if [ "$VERSIONS" = "java67"]; then
+    set -- "$@" "openjdk:6-jdk" "openjdk:7-jdk"
+  elif [ "$VERSIONS" = "java89"]; then
+    set -- "$@" "eclipse-temurin:8-jdk" "eclipse-temurin:11-jdk" "eclipse-temurin:17-jdk" "eclipse-temurin:21-jdk" \
+                "ibm-semeru-runtimes:open-8-jdk" "ibm-semeru-runtimes:open-11-jdk" "ibm-semeru-runtimes:open-17-jdk" "ibm-semeru-runtimes:open-21-jdk"
+  fi
 fi
 
 IMAGES=$@
@@ -67,10 +76,11 @@ IMAGES=$@
 
 for VERSION in $VERSIONS; do
   echo "Building ${VERSION}"
-  docker run --rm \
-    -v "${CALDUMDIR}:/caldum" \
-    -v "${CALDUMDIR}/build/m2:/root/.m2" -v "${CALDUMDIR}/build/gradle:/root/.gradle" \
-    -w "/caldum/tests" "${BUILD_IMAGE}" "./${VERSION}/build.sh"
+  #docker run --rm \
+  #  -v "${CALDUMDIR}:/caldum" \
+  #  -v "${CALDUMDIR}/build/m2:/root/.m2" -v "${CALDUMDIR}/build/gradle:/root/.gradle" \
+  #  -w "/caldum/tests" "${BUILD_IMAGE}" "./${VERSION}/build.sh"
+  "./${VERSION}/build-docker.sh"
 
   for TEST in $TESTS; do
     for IMAGE in $IMAGES; do

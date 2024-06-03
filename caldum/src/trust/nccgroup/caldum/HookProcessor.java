@@ -99,7 +99,7 @@ public final class HookProcessor {
     for (Class<?> hook : hooks) {
       Class<?>[] nestedClasses = hook.getDeclaredClasses();
       if (nestedClasses.length != 1) {
-        logger.severe(String.format(
+        logger.log(Level.SEVERE, String.format(
           "invalid number of nested classes within %s, must be 1",
           hook.getName()
         ));
@@ -112,8 +112,8 @@ public final class HookProcessor {
         Class<?> old = getSystemClassLoader().loadClass(hook.getName());
         if (old.getClassLoader() == null) {
           alreadyInjectedClass = old;
-          System.out.println("old: " + old);
-          System.out.println("old.getClassLoader(): " + old.getClassLoader());
+          logger.log(Level.INFO, "old: " + old);
+          logger.log(Level.INFO, "old.getClassLoader(): " + old.getClassLoader());
         }
       } catch (ClassNotFoundException cnfe) {
         // don't add dynvar instrumentation since it's the first time // ???
@@ -129,7 +129,7 @@ public final class HookProcessor {
         logger.log(Level.SEVERE, "failed (IO error) to swap/inject class: " + hook.getName(), e);
         continue;
       } catch (Throwable t) {
-        System.out.println("??? " + hook.getName());
+        logger.log(Level.SEVERE, "??? " + hook.getName());
         logger.log(Level.SEVERE, "??? failed to swap/inject class: " + hook.getName(), t);
         if (t instanceof java.lang.UnsupportedOperationException) {
           logger.log(Level.SEVERE, "failed class fields: " + hook.getName());
@@ -153,25 +153,22 @@ public final class HookProcessor {
           } catch (ClassNotFoundException ignore) {
             logger.log(Level.SEVERE, "not found in bootstrap classloader");
           }
-
-
         }
-
         throw new RuntimeException(t);
       }
-      System.out.println("\"successfully\" (w/o exception) swap/injected: " + hook);
+      logger.log(Level.INFO, "\"successfully\" (w/o exception) swap/injected: " + hook);
 
       if (injectedhooks[1] == null) {
         logger.log(Level.SEVERE, "failed (unknown error) to swap/inject class: " + hook.getName());
         continue;
       } else {
-        logger.log(Level.SEVERE, "loaded class: " + hook.getName());
+        logger.log(Level.INFO, "loaded class: " + hook.getName());
         for (Field f : hook.getDeclaredFields()) {
-          logger.log(Level.SEVERE, "- " + f.toString());
+          logger.log(Level.INFO, "- " + f.toString());
         }
-        logger.log(Level.SEVERE, "swapped/injected class: " + injectedhooks[1].getName());
+        logger.log(Level.INFO, "swapped/injected class: " + injectedhooks[1].getName());
         for (Field f : injectedhooks[1].getDeclaredFields()) {
-          logger.log(Level.SEVERE, "- " + f.toString());
+          logger.log(Level.INFO, "- " + f.toString());
         }
       }
 

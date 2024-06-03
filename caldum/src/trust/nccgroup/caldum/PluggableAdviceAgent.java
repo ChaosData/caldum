@@ -44,6 +44,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -182,6 +183,8 @@ public class PluggableAdviceAgent {
         if (!Modifier.isStatic(field.getModifiers())) {
           continue;
         }
+        //note: java 9+ complain about isAccessible, but we can't replace it w/ canAccess (9+) due to supporting 6-8
+        //todo: wrap with a multi-release class
         if (!field.isAccessible()) {
           field.setAccessible(true);
         }
@@ -467,7 +470,8 @@ public class PluggableAdviceAgent {
     public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder,
                                             TypeDescription typeDescription,
                                             ClassLoader classLoader,
-                                            JavaModule module) {
+                                            JavaModule module,
+                                            ProtectionDomain domain) {
       //builder.method(memberMatcher).intercept()
       return builder.visit(avw);
     }

@@ -16,7 +16,8 @@ SCRIPTDIR=`pwd -P`
 cd "${SCRIPTDIR}"
 
 cd "${SCRIPTDIR}/../../vulcanloader"
-./gradlew shadowJar -Pno-tools
+#./gradlew shadowJar -Pno-tools
+./gradlew shadowJar
 echo "${SCRIPTDIR}"
 
 cd "${SCRIPTDIR}"

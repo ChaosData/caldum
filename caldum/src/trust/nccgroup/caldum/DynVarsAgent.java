@@ -40,6 +40,7 @@ import trust.nccgroup.caldum.asm.DynamicFields;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.security.ProtectionDomain;
 import java.util.Map;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
@@ -63,20 +64,20 @@ public class DynVarsAgent {
 
     AgentBuilder.Identified.Extendable abe = abn.transform(new AgentBuilder.Transformer() {
       @Override
-      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
+      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
 
         if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() > 0) {
-          System.out.println("already transformed " + typeDescription.getName() + ", bailing out");
+          //System.out.println("already transformed " + typeDescription.getName() + ", bailing out");
           return builder;
         } else {
-          System.out.println("transforming " + typeDescription.getName());
+          //System.out.println("transforming " + typeDescription.getName());
         }
 
         try {
           Class<?> old = getSystemClassLoader().getParent().loadClass(typeDescription.getName());
           if (old.getClassLoader() == null) {
             //alreadyInjectedClass = old;
-            System.out.println("DynVarsAgent:old: " + old);
+            //System.out.println("DynVarsAgent:old: " + old);
             //System.out.println("DynVarsAgent:old.getClassLoader(): " + old.getClassLoader()); // generally null for bootstrap
           }
         } catch (ClassNotFoundException cnfe) {
@@ -92,7 +93,7 @@ public class DynVarsAgent {
         //System.out.println("!!!!");
 
         if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() == 0) {
-          System.out.println("adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+          //System.out.println("adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
           builder = builder.defineField(DYNVARS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
         }
 
@@ -138,7 +139,7 @@ public class DynVarsAgent {
 //    abe = abe.transform(new AgentBuilder.Transformer() {
 //      @Override
 //      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
-        System.out.println("dynamic fields w/ initializer: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+        //System.out.println("dynamic fields w/ initializer: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
 
         builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
           .writerFlags(ClassWriter.COMPUTE_MAXS)
@@ -172,7 +173,7 @@ public class DynVarsAgent {
                                         MethodVisitor methodVisitor,
                                         Implementation.Context implementationContext,
                                         TypePool typePool, int writerFlags, int readerFlags) {
-                System.out.println("ForDeclaredMethods.MethodVisitorWrapper wrap");
+                //System.out.println("ForDeclaredMethods.MethodVisitorWrapper wrap");
                 return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, false);
               }
             }));
@@ -182,7 +183,7 @@ public class DynVarsAgent {
 //    abe = abe.transform(new AgentBuilder.Transformer() {
 //      @Override
 //      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
-        System.out.println("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+        //System.out.println("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
         builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
         //return builder.visit(new MemberRemoval().stripFields(named("zzz")));
 
@@ -195,12 +196,13 @@ public class DynVarsAgent {
 
     abe = abe.transform(new AgentBuilder.Transformer() {
       @Override
-      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
+      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
         try {
+          //todo: do this only when annotated for it
           Map<TypeDescription, File> m = builder.make().saveIn(new File("./"));
-          for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
+          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
             System.out.println(kv.getValue());
-          }
+          }*/
         } catch (IOException e) {
           e.printStackTrace();
         }

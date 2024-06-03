@@ -65,9 +65,7 @@ public class SpringTest {
 
   @Test
   public void startspring() throws Throwable {
-    System.out.println("startspring called");
     MyApplication.main();
-    System.out.println("startspring - post MyApplication.main()");
 
     String resText = null;
     for (int i=0; i<3; i++) {
@@ -161,40 +159,11 @@ public class SpringTest {
   @EnableAutoConfiguration
   static class MyApplication {
     public static void main() {
-      System.out.println("wat");
       System.setProperty("server.address", "127.0.0.1");
       System.setProperty("server.port", "8084");
 
-      System.setProperty("logging.level.org.springframework.web.HttpLogging", "error");
-      System.setProperty("logging.level.io.netty", "off");
-      System.clearProperty("jdk.debug");
-      System.setProperty("spring.config.location", "file:/caldum/application.properties");
-      /*
-//      System.setProperty("logging.file.name", "/dev/null");
-      System.setProperty("logging.level.org.springframework.web", "OFF");
-      //System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
-      //System.setProperty("logging.pattern.console", "");
-      System.setProperty("logging.level.org.springframework.boot.autoconfigure", "OFF");
-      System.setProperty("debug", "false");
-      //System.clearProperty("debug");
-      System.setProperty("logging.level.root", "ERROR");
-      System.setProperty("org.springframework.boot.logging.LoggingSystem", "none");
-      System.setProperty("spring.main.banner-mode", "off");
-      System.setProperty("spring.main.log-startup-info", "false");
-      System.setProperty("logging.level.org.springframework.boot", "OFF");
-//      Properties props = new Properties();
-//      props.setProperty("spring.main.log-startup-info", "false");
-//      props.setProperty("spring.main.banner-mode", "off");
-      //app.setDefaultProperties(props);
-      */
-      //Logger.getLogger("org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLogger").setLevel(Level.OFF);
-      //Logger.getGlobal().setLevel(Level.SEVERE);
-
-      //System.out.println(System.getProperties());
-
-
-      //String cerl = "org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener";
-      //Log l = LogFactory.getLog(cerl);
+//      String cerl = "org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener";
+//      Log l = LogFactory.getLog(cerl);
 //      try {
 //        Field f = l.getClass().getSuperclass().getDeclaredField("logger");
 //        f.setAccessible(true);
@@ -202,45 +171,20 @@ public class SpringTest {
 //        ll.setLevel(Level.ERROR);
 //      } catch (Throwable t) {t.printStackTrace();}
 
-      ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-      root.setLevel(Level.OFF);
+      java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
+
+      ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+      root.setLevel(ch.qos.logback.classic.Level.OFF);
 
       SpringApplication app = new SpringApplicationBuilder()
         .sources(MyApplication.class)
-        .initializers(new ApplicationContextInitializer<ConfigurableApplicationContext>() {
-            @Override
-            public void initialize(ConfigurableApplicationContext ctx) {
-              ctx.getEnvironment().getPropertySources().addFirst(new PropertiesPropertySource("propsfirst", System.getProperties()));
-              ctx.getEnvironment().getPropertySources().addLast(new PropertiesPropertySource("propslast", System.getProperties()));
-            }
-          })
         .logStartupInfo(false)
         .build();
       //app.setDefaultProperties(System.getProperties());
       app.setLogStartupInfo(false);
       app.run(new String[]{
-//              "--spring.config.location=file:/workdir/application.properties",
-//              "--spring.profiles.active=production",
-                      "--logging.level.org.springframework.web=OFF",
-                      "--logging.level.org.springframework.boot=OFF",
-                      "--logging.level.root=OFF",
-                      "--spring.main.banner-mode=OFF",
-                      "--logging.level.org.springframework=OFF",
-                      "--spring.main.log-startup-info=false",
-                      "--logging.level.org.springframework.boot.autoconfigure=OFF"
-              });
-      /*
-      SpringApplication.run(MyApplication.class, new String[]{
-        "--logging.level.org.springframework.web=error",
-        "--logging.level.org.springframework.boot=error",
-        "--logging.level.root=error",
         "--spring.main.banner-mode=OFF",
-        "--logging.level.org.springframework=error",
-        "--spring.main.log-startup-info=false",
-        "--logging.level.org.springframework.boot.autoconfigure=OFF",
-        "--org.springframework.boot.logging.LoggingSystem=none"
       });
-      */
     }
 
     @RestController
