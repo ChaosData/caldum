@@ -32,6 +32,7 @@ public class State {
   public static final State ENTER_EXIT = new State(1, State.class);
   public static final State EXIT_ENTER = new State(2, State.class);
   public static final State EXIT_EXIT = new State(3, State.class); // unused
+  public static final State SKIP_SKIP = new State(4, State.class); // unused
 
   private int state;
   private Class<?> clazz;
@@ -61,6 +62,7 @@ public class State {
       case 1: { return "ENTER_EXIT"; }
       case 2: { return "EXIT_ENTER"; }
       case 3: { return "EXIT_EXIT"; }
+      case 4: { return "SKIP_SKIP"; }
       default: { return "INVALID"; }
     }
   }
@@ -69,8 +71,8 @@ public class State {
 
   //public static ConcurrentHashMap<Long, State> states = new ConcurrentHashMap<Long, State>(16, 0.75f, 1);
   // using synchronized over ConcurrentHashMap due to concerns that writes may not finish (and reads get a stale value)
-  public static Map<Long, State> states = new HashMap<Long, State>();
-  public static Map<Class<?>, Map<Long, State>> class_states = new HashMap<Class<?>, Map<Long, State>>();
+  public final static Map<Long, State> states = new HashMap<Long, State>();
+  public final static Map<Class<?>, Map<Long, State>> class_states = new HashMap<Class<?>, Map<Long, State>>();
 
 
 

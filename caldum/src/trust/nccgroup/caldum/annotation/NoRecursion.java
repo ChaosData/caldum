@@ -1,5 +1,5 @@
 /*
-Copyright 2018 NCC Group
+Copyright 2024 Jeff Dileo
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,16 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package trust.nccgroup.caldum.annotation;
-
-import net.bytebuddy.agent.builder.AgentBuilder;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Hook {
-  Class<?>[] wrappers() default void.class;
-  //AgentBuilder.RedefinitionStrategy redefinition() default AgentBuilder.RedefinitionStrategy.RETRANSFORMATION;
+public @interface NoRecursion {
+
 }

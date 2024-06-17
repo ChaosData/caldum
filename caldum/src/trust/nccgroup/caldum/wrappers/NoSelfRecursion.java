@@ -18,14 +18,16 @@ package trust.nccgroup.caldum.wrappers;
 
 import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.global.State;
+import trust.nccgroup.caldum.util.CompatHelper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static net.bytebuddy.asm.Advice.*;
 import static trust.nccgroup.caldum.global.State.*;
 
-@SuppressWarnings("ALL")
+//@SuppressWarnings("ALL")
 public class NoSelfRecursion {
   // intended to wrap hook code to enable it to further call hooked code without infinitely invoking the hook
 
@@ -39,25 +41,35 @@ public class NoSelfRecursion {
         cs = State.class_states.get(hook_class);
         if (cs == null) {
           Map<Long, State> _s = new HashMap<Long, State>();
-          cs = State.class_states.putIfAbsent(hook_class, _s);
-          if (cs == null) {
-            cs = _s;
-          }
+          CompatHelper.mapPutIfAbsent(State.class_states, hook_class, _s);
+          cs = _s;
         }
       }
       State s;
       synchronized (cs) {
-        s = cs.putIfAbsent(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class));
-      }
-      if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
-        return false; // run entry hook body, eventually run exit hook body (if exit hook'd)
-      } else if (s.equals(new State(ENTER_EXIT, hook_class))) {
-        synchronized (cs) {
-          cs.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+        s = CompatHelper.mapPutIfAbsent(cs, Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class));
+
+        if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
+          return false; // run entry hook body, eventually run exit hook body (if exit hook'd)
+        } else if (s.equals(new State(ENTER_EXIT, hook_class))) {
+//          synchronized (cs) {
+//            cs.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+          CompatHelper.mapReplace(cs, Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+//          State oldValue = new State(ENTER_EXIT, hook_class);
+//          State newValue = new State(ENTER_ENTER, hook_class);
+//          Long key = Thread.currentThread().getId();
+//          State curValue = cs.get(key);
+//          if (!oldValue.equals(curValue) || !cs.containsKey(key)) {
+//            //pass
+//          } else {
+//            cs.put(key, newValue);
+//          }
+
+//          }
+          return false; // top level is entry-only hook and existing state is stale, replace and run entry hook body
+        } else { // already set
+          return true; // skip
         }
-        return false; // top level is entry-only hook and existing state is stale, replace and run entry hook body
-      } else { // already set
-        return true; // skip
       }
     }
 
@@ -73,14 +85,13 @@ public class NoSelfRecursion {
           cs = State.class_states.get(hook_class);
           if (cs == null) {
             Map<Long, State> _s = new HashMap<Long, State>();
-            cs = State.class_states.putIfAbsent(hook_class, _s);
-            if (cs == null) {
-              cs = _s;
-            }
+            CompatHelper.mapPutIfAbsent(State.class_states, hook_class, _s);
+            cs = _s;
           }
         }
         synchronized (cs) {
-          cs.replace(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
+          //cs.replace(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
+          CompatHelper.mapReplace(cs, Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
         }
       }
     }
@@ -97,7 +108,7 @@ public class NoSelfRecursion {
         cs = State.class_states.get(hook_class);
         if (cs == null) {
           Map<Long, State> _s = new HashMap<Long, State>();
-          cs = State.class_states.putIfAbsent(hook_class, _s);
+          cs = CompatHelper.mapPutIfAbsent(State.class_states, hook_class, _s);
           if (cs == null) {
             cs = _s;
           }
@@ -105,17 +116,20 @@ public class NoSelfRecursion {
       }
       State s;
       synchronized (cs) {
-        s = cs.putIfAbsent(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
-      }
-      if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
-        return false; // run exit hook body
-      } else if (s.equals(new State(ENTER_EXIT, hook_class))) { // this is the exit to the just completed entry hook
-        synchronized (cs) {
-          cs.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+        s = CompatHelper.mapPutIfAbsent(cs, Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+
+        if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
+          return false; // run exit hook body
+        } else if (s.equals(new State(ENTER_EXIT, hook_class))) { // this is the exit to the just completed entry hook
+//          synchronized (cs) {
+          //cs.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+          CompatHelper.mapReplace(cs, Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+//          }
+          return false; // run exit hook body
+        } else {
+          return true; // skip
         }
-        return false; // run exit hook body
-      } else {
-        return true; // skip
+
       }
     }
 
@@ -131,14 +145,14 @@ public class NoSelfRecursion {
           cs = State.class_states.get(hook_class);
           if (cs == null) {
             Map<Long, State> _s = new HashMap<Long, State>();
-            cs = State.class_states.putIfAbsent(hook_class, _s);
+            cs = CompatHelper.mapPutIfAbsent(State.class_states, hook_class, _s);
             if (cs == null) {
               cs = _s;
             }
           }
         }
         synchronized (cs) {
-          cs.remove(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+          CompatHelper.mapRemove(cs, Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
         }
       }
     }

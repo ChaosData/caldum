@@ -18,11 +18,14 @@ package trust.nccgroup.caldum.wrappers;
 
 import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.global.State;
+import trust.nccgroup.caldum.util.CompatHelper;
+
+import java.util.Objects;
 
 import static net.bytebuddy.asm.Advice.*;
 import static trust.nccgroup.caldum.global.State.*;
 
-@SuppressWarnings("ALL")
+//@SuppressWarnings("ALL")
 public class NoRecursion {
   // intended to wrap hook code to enable it to further call hooked code without infinitely invoking the hook
 
@@ -51,17 +54,27 @@ public class NoRecursion {
 
       State s;
       synchronized (State.states) {
-        s = State.states.putIfAbsent(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class));
-      }
-      if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
-        return false; // run entry hook body, eventually run exit hook body (if exit hook'd)
-      } else if (s.equals(new State(ENTER_EXIT, hook_class))) {
-        synchronized (State.states) {
-          State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+        s = CompatHelper.mapPutIfAbsent(State.states, Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class));
+
+        if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
+          return false; // run entry hook body, eventually run exit hook body (if exit hook'd)
+        } else if (s.equals(new State(ENTER_EXIT, hook_class))) {
+//          synchronized (State.states) {
+            //State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(ENTER_ENTER, hook_class));
+          State oldValue = new State(ENTER_EXIT, hook_class);
+          State newValue = new State(ENTER_ENTER, hook_class);
+          Long key = Thread.currentThread().getId();
+          State curValue = State.states.get(key);
+          if (!CompatHelper.objectsEquals(curValue, oldValue) || (curValue == null && !State.states.containsKey(key))) {
+            //pass
+          } else {
+            State.states.put(key, newValue);
+          }
+//          }
+          return false; // top level is entry-only hook and existing state is stale, replace and run entry hook body
+        } else { // already set
+          return true; // skip
         }
-        return false; // top level is entry-only hook and existing state is stale, replace and run entry hook body
-      } else { // already set
-        return true; // skip
       }
     }
 
@@ -73,7 +86,16 @@ public class NoRecursion {
         return;
       } else { // ratchet state
         synchronized (State.states) {
-          State.states.replace(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
+          //State.states.replace(Thread.currentThread().getId(), new State(ENTER_ENTER, hook_class), new State(ENTER_EXIT, hook_class));
+          State oldValue = new State(ENTER_ENTER, hook_class);
+          State newValue = new State(ENTER_EXIT, hook_class);
+          Long key = Thread.currentThread().getId();
+          State curValue = State.states.get(key);
+          if (!CompatHelper.objectsEquals(curValue, oldValue) || (curValue == null && !State.states.containsKey(key))) {
+            //pass
+          } else {
+            State.states.put(key, newValue);
+          }
         }
       }
     }
@@ -87,17 +109,27 @@ public class NoRecursion {
 
       State s;
       synchronized (State.states) {
-        s = State.states.putIfAbsent(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
-      }
-      if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
-        return false; // run exit hook body
-      } else if (s.equals(new State(ENTER_EXIT, hook_class))) { // this is the exit to the just completed entry hook
-        synchronized (State.states) {
-          State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+        s = CompatHelper.mapPutIfAbsent(State.states, Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+
+        if (s == null) { // first NoRecursion hook Wrapper.(OnMethodEnter/OnMethodExit)
+          return false; // run exit hook body
+        } else if (s.equals(new State(ENTER_EXIT, hook_class))) { // this is the exit to the just completed entry hook
+//          synchronized (State.states) {
+            //State.states.replace(Thread.currentThread().getId(), new State(ENTER_EXIT, hook_class), new State(EXIT_ENTER, hook_class));
+          State oldValue = new State(ENTER_EXIT, hook_class);
+          State newValue = new State(EXIT_ENTER, hook_class);
+          Long key = Thread.currentThread().getId();
+          State curValue = State.states.get(key);
+          if (!CompatHelper.objectsEquals(curValue, oldValue) || (curValue == null && !State.states.containsKey(key))) {
+            //pass
+          } else {
+            State.states.put(key, newValue);
+          }
+//          }
+          return false; // run exit hook body
+        } else {
+          return true; // skip
         }
-        return false; // run exit hook body
-      } else {
-        return true; // skip
       }
     }
 
@@ -109,7 +141,7 @@ public class NoRecursion {
         return;
       } else { // clear state
         synchronized (State.states) {
-          State.states.remove(Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
+          CompatHelper.mapRemove(State.states, Thread.currentThread().getId(), new State(EXIT_ENTER, hook_class));
         }
       }
     }
