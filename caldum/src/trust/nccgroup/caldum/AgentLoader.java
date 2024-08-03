@@ -94,7 +94,7 @@ public final class AgentLoader {
       String agentName = attrs.getValue(attrName);
 
       if (agentName == null) {
-        logger.severe(String.format(
+        logger.info(String.format(
           "Failed to load agent: " +
           "Could not find '%s' attribute in '%s'.",
           attrName, path
@@ -118,8 +118,6 @@ public final class AgentLoader {
       ah.inst = inst;
 
       if (agentName != null) {
-        loadedAgents.put(new File(path).getName(), ah);
-
         try {
           agentClass = Class.forName(agentName, true, childloader);
         } catch (ClassNotFoundException cnfe) {
@@ -162,8 +160,8 @@ public final class AgentLoader {
             }
 
             ah.agentClass = agentClass;
-            ah.rcfts = HookProcessor.process(inst, childloader, scanPrefix);
-            logger.info(String.format("Loaded agent '%s'.", path));
+            //ah.rcfts = HookProcessor.process(inst, childloader, scanPrefix);
+            //logger.info(String.format("Loaded agent '%s'.", path));
           } catch (IllegalAccessException iae) {
             logger.log(SEVERE, String.format(
               "Failed to load agent: " +
@@ -189,6 +187,9 @@ public final class AgentLoader {
           ret = false;
         }
       }
+      ah.rcfts = HookProcessor.process(inst, childloader, scanPrefix);
+      loadedAgents.put(new File(path).getName(), ah);
+      logger.info(String.format("Loaded agent '%s'.", path));
 
       try {
         Method close = null;

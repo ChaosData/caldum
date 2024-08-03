@@ -1,27 +1,6 @@
-# Have Tests For:
+# Todos
 
-* premain (bootstrap + spring)
-* agentmain (bootstrap + spring)
-* java 6/7 (hotspot)
-* java 8/9+ (hotspot/openj9, tested up to 21)
-* test harness (e.g. provide java version, gets plugged into docker script depending on version)
-
-# Need Tests For:
-
-* CLI args
-* Config file
-* Detach cleanup
-* Multiple attach/detach cycles
-* In-place hook upgrade (including for bootstrap hooks)
-* Multiple JARs with colliding classes
-* Anti-debugging
-
-# Have
-* Global no recursion (NoRecursion) wrapper
-* Single hook no recursion (NoSelfRecursion) wrapper
-* (untested) bypass no recursion for individual calls
-
-# Want:
+## Want:
 
 * Single implemntation of test code
     * JavaParse codegen to "update" hooks?
@@ -36,3 +15,30 @@
 * shouganaiyo-loader suppport
 * (*) multi-release jar to get around eventual issues w/ isAccessible
     * have workaround using reflection compat polyfill
+
+## Have
+
+* Global no recursion (NoRecursion) wrapper
+* Single hook no recursion (NoSelfRecursion) wrapper
+* (untested) bypass no recursion for individual calls
+
+# Tests
+
+## Have Tests For:
+
+* premain (bootstrap + spring)
+* agentmain (bootstrap + spring)
+* java 6/7 (hotspot)
+* java 8/9+ (hotspot/openj9, tested up to 21)
+* test harness (e.g. provide java version, gets plugged into docker script depending on version)
+
+## Need Tests For:
+
+* CLI args
+* Config file
+* Detach cleanup
+* Multiple attach/detach cycles
+* In-place hook upgrade (including for bootstrap hooks)
+* Multiple JARs with colliding classes
+* Anti-debugging
+

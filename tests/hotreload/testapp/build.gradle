@@ -1,0 +1,46 @@
+apply plugin: 'java'
+
+buildscript {
+  repositories {
+    mavenLocal()
+    gradlePluginPortal()
+  }
+
+  dependencies {
+    classpath group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '5.2.0'
+  }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+  testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+sourceSets {
+  main {
+  }
+
+  test {
+    java {
+      srcDirs = ['./src']
+    }
+  }
+}
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+task testJar(type: ShadowJar) {
+ classifier = 'tests'
+ from sourceSets.test.output
+ configurations = [project.configurations.testRuntime]
+}
+
+defaultTasks "testJar"
