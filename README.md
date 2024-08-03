@@ -203,12 +203,12 @@ The `ElementMatcher` will be used to configure the `ClassLoader` matcher of
 The `ElementMatcher` will be used to configure the module matcher of
 `net.bytebuddy.agent.builder.AgentBuilder::type`.
 
-### `@Module.Raw`
+### `@Matcher.Raw`
 
 The `ElementMatcher` will be used to configure
 `net.bytebuddy.agent.builder.AgentBuilder::type(AgentBuilder.RawMatcher matcher)`.
 
-### `@Module.Member`
+### `@Matcher.Member`
 
 The `ElementMatcher` will be used to configure
 `net.bytebuddy.asm.Advice::on(ElementMatcher<? super MethodDescription> matcher)`.
@@ -247,7 +247,7 @@ otherwise.
 
 # License
 
-Caldum and VulcanLoader are licensed under the
+Caldum (and VulcanLoader) are licensed under the
 [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html).
 Exceptions to this (i.e. for certain vendored source files) are explicitly
 noted in the relevant source files.
