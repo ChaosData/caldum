@@ -18,13 +18,13 @@ package trust.nccgroup.caldum;
 
 import trust.nccgroup.caldum.annotation.DI;
 import trust.nccgroup.caldum.annotation.Hook;
+import trust.nccgroup.caldum.util.CompatHelper;
 import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,7 +44,6 @@ public final class HookProcessor {
   ) {
     return process(inst, cl, scanPrefix, null, false);
   }
-
 
   public static ArrayList<DestructingResettableClassFileTransformer> process(
     Instrumentation inst, ClassLoader cl, String scanPrefix,
@@ -234,9 +233,10 @@ public final class HookProcessor {
         continue;
       }
 
-      if (!field.isAccessible()) {
-        field.setAccessible(true);
-      }
+//      if (!field.isAccessible()) {
+//        field.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(field);
 
       Object val;
       try {
@@ -258,9 +258,10 @@ public final class HookProcessor {
         continue;
       }
 
-      if (!nfield.isAccessible()) {
-        nfield.setAccessible(true);
-      }
+//      if (!nfield.isAccessible()) {
+//        nfield.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(field);
 
       try {
         nfield.set(null, val);

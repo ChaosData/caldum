@@ -19,7 +19,7 @@
 # Have
 * Global no recursion (NoRecursion) wrapper
 * Single hook no recursion (NoSelfRecursion) wrapper
-* [untested] bypass no recursion for individual calls
+* (untested) bypass no recursion for individual calls
 
 # Want:
 
@@ -31,7 +31,8 @@
 * To figure out why logger crashed in `./gradlew test`
     * Does it happen w/ raw junit?
 * More anti-debugging
-* MavenCentral
+* Packaging
     * For full release
 * shouganaiyo-loader suppport
-* multi-release jar to get around eventual issues w/ isAccessible
+* (*) multi-release jar to get around eventual issues w/ isAccessible
+    * have workaround using reflection compat polyfill

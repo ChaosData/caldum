@@ -37,6 +37,7 @@ import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.utility.JavaModule;
 import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.asm.DynamicFields;
+import trust.nccgroup.caldum.util.CompatHelper;
 
 import java.lang.annotation.Annotation;
 import java.lang.instrument.Instrumentation;
@@ -185,9 +186,10 @@ public class PluggableAdviceAgent {
         }
         //note: java 9+ complain about isAccessible, but we can't replace it w/ canAccess (9+) due to supporting 6-8
         //todo: wrap with a multi-release class
-        if (!field.isAccessible()) {
-          field.setAccessible(true);
-        }
+//        if (!field.isAccessible()) {
+//          field.setAccessible(true);
+//        }
+        CompatHelper.trySetAccessible(field);
 
         Annotation[] annos = field.getDeclaredAnnotations();
 
@@ -214,9 +216,11 @@ public class PluggableAdviceAgent {
         if (!Modifier.isStatic(method.getModifiers())) {
           continue;
         }
-        if (!method.isAccessible()) {
-          method.setAccessible(true);
-        }
+//        if (!method.isAccessible()) {
+//          method.setAccessible(true);
+//        }
+        CompatHelper.trySetAccessible(method);
+
 
         Annotation[] annos = method.getDeclaredAnnotations();
 

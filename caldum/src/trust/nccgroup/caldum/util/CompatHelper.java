@@ -1,8 +1,54 @@
 package trust.nccgroup.caldum.util;
 
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CompatHelper {
+  private static final Logger logger = TmpLogger.DEFAULT;
+
+  final static Method trySetAccessible_m;
+  final static Method isAccessible_m;
+
+  static {
+    Method _trySetAccessible = null;
+    Method _isAccessible = null;
+    try {
+      //java 9+
+      _trySetAccessible = AccessibleObject.class.getDeclaredMethod("trySetAccessible");
+    } catch (NoSuchMethodException e) {
+      //java <9
+      try {
+        _isAccessible = AccessibleObject.class.getDeclaredMethod("isAccessible");
+      } catch (NoSuchMethodException e2) {
+        //wat
+        logger.log(Level.SEVERE, "Could not find trySetAccessible or isAccessible in AccessibleObject class.");
+      }
+    }
+    trySetAccessible_m = _trySetAccessible;
+    isAccessible_m = _isAccessible;
+  }
+
+  public static void trySetAccessible(AccessibleObject ao) {
+    try {
+      if (trySetAccessible_m != null) {
+        trySetAccessible_m.invoke(ao);
+      } else if (isAccessible_m != null) {
+        if (!(Boolean)isAccessible_m.invoke(ao)) {
+          ao.setAccessible(true);
+        }
+      } else {
+        logger.log(Level.SEVERE, "attempted trySetAccessible() polyfill but neither method obtained.");
+      }
+    } catch (IllegalAccessException e) {
+      logger.log(Level.SEVERE, "iae", e);
+    } catch (InvocationTargetException e) {
+      logger.log(Level.SEVERE, "ite", e);
+    }
+  }
 
   public static boolean objectsEquals(Object o1, Object o2) {
     return (o1 == o2) || (o1 != null && o1.equals(o2));

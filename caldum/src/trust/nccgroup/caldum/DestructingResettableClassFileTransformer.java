@@ -18,6 +18,7 @@ package trust.nccgroup.caldum;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
+import trust.nccgroup.caldum.util.CompatHelper;
 import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.Closeable;
@@ -60,9 +61,10 @@ public class DestructingResettableClassFileTransformer {
         continue;
       }
 
-      if (!field.isAccessible()) {
-        field.setAccessible(true);
-      }
+//      if (!field.isAccessible()) {
+//        field.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(field);
 
       if (field.getType().equals(Logger.class)) {
         try {

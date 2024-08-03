@@ -17,6 +17,7 @@ limitations under the License.
 package trust.nccgroup.caldum;
 
 import trust.nccgroup.caldum.annotation.DI;
+import trust.nccgroup.caldum.util.CompatHelper;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -41,9 +42,11 @@ public class DependencyInjection {
         continue;
       }
 
-      if (!field.isAccessible()) {
-        field.setAccessible(true);
-      }
+//      if (!field.isAccessible()) {
+//        field.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(field);
+
 
       DI.Provide p = field.getAnnotation(DI.Provide.class);
       if (p == null) {
@@ -74,9 +77,11 @@ public class DependencyInjection {
         continue;
       }
 
-      if (!method.isAccessible()) {
-        method.setAccessible(true);
-      }
+//      if (!method.isAccessible()) {
+//        method.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(method);
+
 
       DI.Provide p = method.getAnnotation(DI.Provide.class);
       if (p == null) {
@@ -125,9 +130,11 @@ public class DependencyInjection {
         continue;
       }
 
-      if (!field.isAccessible()) {
-        field.setAccessible(true);
-      }
+//      if (!field.isAccessible()) {
+//        field.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(field);
+
 
       if (field.getAnnotation(DI.AgentClassLoader.class) != null) {
         try {
@@ -188,9 +195,11 @@ public class DependencyInjection {
         continue;
       }
 
-      if (!field.isAccessible()) {
-        field.setAccessible(true);
-      }
+//      if (!field.isAccessible()) {
+//        field.setAccessible(true);
+//      }
+      CompatHelper.trySetAccessible(field);
+
 
       if (field.getAnnotation(DI.Inject.class) == null) {
         continue;
