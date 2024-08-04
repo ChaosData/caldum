@@ -33,7 +33,7 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
 public class JavaAgentHiderHooks {
 
   @Hook // Caldum-internal @Hooks are loaded manually in Initialization::run
-  @DumpWrappers
+  //@DumpWrappers
   public static class RMXB {
 
     public static List<String> vmArgs = null;

@@ -193,6 +193,7 @@ public class BootstrapSwapInjector {
     cs.put(td, ClassFileLocator.ForInstrumentation.of(inst, current).locate(current.getName()).resolve());
     //cs.put(td, ClassFileLocator.ForClassLoader.read(current));
 
+    //todo: delete this
     File temp = TmpDir.create();
     if (temp == null) {
       throw new IOException("failed to create tmp directory");

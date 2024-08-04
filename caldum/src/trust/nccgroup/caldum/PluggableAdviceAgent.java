@@ -325,7 +325,7 @@ public class PluggableAdviceAgent {
       byte[] alt_hook_bytes = null;
 
       DynamicType.Builder<?> dtb = new ByteBuddy()
-        .with(InstrumentedType.Factory.Default.MODIFIABLE)
+        .with(InstrumentedType.Factory.Default.FROZEN)
         .with(Implementation.Context.Disabled.Factory.INSTANCE) // don't add method for static init
         .with(AnnotationRetention.ENABLED)
         .redefine(hookClass, ClassFileLocator.ForInstrumentation.of(inst, hookClass));

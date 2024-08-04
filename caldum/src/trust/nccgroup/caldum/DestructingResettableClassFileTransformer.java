@@ -69,8 +69,10 @@ public class DestructingResettableClassFileTransformer {
       if (field.getType().equals(Logger.class)) {
         try {
           Logger l = (Logger)field.get(null);
-          for (Handler h : l.getHandlers()) {
-            h.close();
+          if (l != null) {
+            for (Handler h : l.getHandlers()) {
+              h.close();
+            }
           }
         } catch (IllegalAccessException e) {
           continue;

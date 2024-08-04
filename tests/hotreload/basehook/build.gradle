@@ -38,7 +38,7 @@ dependencies {
 sourceSets {
   main {
     java {
-      srcDirs = ['./src']
+      srcDirs = ['./src', './gensrc']
     }
 
     resources {
@@ -67,6 +67,27 @@ jar {
   }
 }
 */
+
+task codegen() {
+  println "Generating sources...."
+  def gensrcdir = project.sourceSets.main.java.srcDirs[1]
+  def target_path = "" + gensrcdir + "/trust/nccgroup/caldumtest/generated/TemplatedFileHook.java"
+  def templatedir = "" + gensrcdir + "/../templatesrc/trust/nccgroup/caldumtest/generated/"
+  
+  if (!project.hasProperty('hookversion')) {
+    throw new Exception("-Phookversion=<version> not set");
+  }
+
+  def template_path = templatedir + "TemplatedFileHook." + hookversion + ".java"
+  def template = new File(template_path).text
+  def target = new File(target_path)
+  target.delete()
+  target << template
+}
+
+tasks.withType(JavaCompile) {
+  compileTask -> compileTask.dependsOn codegen
+}
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 task testJar(type: ShadowJar) {

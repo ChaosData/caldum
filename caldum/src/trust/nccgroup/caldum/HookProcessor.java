@@ -16,9 +16,12 @@ limitations under the License.
 
 package trust.nccgroup.caldum;
 
+import net.bytebuddy.dynamic.ClassFileLocator;
 import trust.nccgroup.caldum.annotation.DI;
+import trust.nccgroup.caldum.annotation.Dump;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.util.CompatHelper;
+import trust.nccgroup.caldum.util.Dumper;
 import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.IOException;
@@ -37,18 +40,20 @@ import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public final class HookProcessor {
 
+  public static Instrumentation inst;
   private static final Logger logger = TmpLogger.DEFAULT;
 
   public static ArrayList<DestructingResettableClassFileTransformer> process(
-    Instrumentation inst, ClassLoader cl, String scanPrefix
+    Instrumentation _inst, ClassLoader cl, String scanPrefix
   ) {
-    return process(inst, cl, scanPrefix, null, false);
+    return process(_inst, cl, scanPrefix, null, false);
   }
 
   public static ArrayList<DestructingResettableClassFileTransformer> process(
-    Instrumentation inst, ClassLoader cl, String scanPrefix,
+    Instrumentation _inst, ClassLoader cl, String scanPrefix,
     String jarPath, boolean isSystem
   ) {
+    inst = _inst;
     if (logger == null) {
       System.err.println("caldum: Failed to initialize logger, exiting.");
       return null;
@@ -130,13 +135,15 @@ public final class HookProcessor {
       } catch (Throwable t) {
         logger.log(Level.SEVERE, "??? " + hook.getName());
         logger.log(Level.SEVERE, "??? failed to swap/inject class: " + hook.getName(), t);
-        if (t instanceof java.lang.UnsupportedOperationException) {
+        if (t instanceof UnsupportedOperationException) {
           logger.log(Level.SEVERE, "failed class fields: " + hook.getName());
           int counter = 0;
           for (Field f : hook.getDeclaredFields()) {
             counter += 1;
             logger.log(Level.SEVERE, "" + counter + " - " + f.toString());
           }
+          Dumper.dumpClass(inst, hook, "./hook." + hook.getName() + ".class");
+
           try {
             Class<?> old = getSystemClassLoader().getParent().loadClass(hook.getName());
             if (old.getClassLoader() == null) {
@@ -146,6 +153,8 @@ public final class HookProcessor {
                 counter += 1;
                 logger.log(Level.SEVERE, "" + counter + " - " + f.toString());
               }
+              Dumper.dumpClass(inst, old, "./old." + old.getName() + ".class");
+
             } else {
               logger.log(Level.SEVERE, "found in other classloader? " + old.toString());
             }

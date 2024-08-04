@@ -95,7 +95,6 @@ public final class AgentLoader {
 
       if (agentName == null) {
         logger.info(String.format(
-          "Failed to load agent: " +
           "Could not find '%s' attribute in '%s'.",
           attrName, path
         ));

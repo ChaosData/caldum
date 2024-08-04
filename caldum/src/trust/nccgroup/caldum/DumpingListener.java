@@ -38,6 +38,7 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
 
   public static class OriginalDumpingClassFileTransformer implements ResettableClassFileTransformer {
 
+    //private Instrumentation inst;
     private final AgentBuilder.RawMatcher matcher;
     private ResettableClassFileTransformer classFileTransformer;
     private final Method[] transforms;
@@ -51,7 +52,8 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
     private final AgentBuilder.CircularityLock circularityLock = DEFAULT_LOCK;
 
     // TODO: figure out how to get byte-buddy to generate the subclass within the same module so we can reflect on it
-    public OriginalDumpingClassFileTransformer(AgentBuilder.RawMatcher _matcher, ResettableClassFileTransformer _classFileTransformer) {
+    public OriginalDumpingClassFileTransformer(/*Instrumentation _inst, */AgentBuilder.RawMatcher _matcher, ResettableClassFileTransformer _classFileTransformer) {
+      //inst = _inst;
       matcher = _matcher;
       classFileTransformer = _classFileTransformer;
       transforms = new Method[2];
@@ -107,11 +109,14 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
       JavaModule module = rawModule == null ? null : JavaModule.of(rawModule);
 
       String typeName = className.replace('/', '.');
-      ClassFileLocator classFileLocator = new ClassFileLocator.Compound(classFileBufferStrategy.resolve(typeName,
-        classfileBuffer,
-        loader,
-        module,
-        protectionDomain), locationStrategy.classFileLocator(loader, module));
+      ClassFileLocator classFileLocator = new ClassFileLocator.Compound(
+          ClassFileLocator.ForInstrumentation.of(HookProcessor.inst, classBeingRedefined)/*,
+          classFileBufferStrategy.resolve(typeName,
+              classfileBuffer,
+              loader,
+              module,
+              protectionDomain),
+          locationStrategy.classFileLocator(loader, module)*/);
       TypePool typePool = poolStrategy.typePool(classFileLocator, loader);
 
       TypeDescription typeDescription = descriptionStrategy.apply(typeName, classBeingRedefined, typePool, circularityLock, loader, module);
@@ -120,6 +125,7 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
           String path = "./" + typeName + ".pre.class";
           FileOutputStream stream = new FileOutputStream(path);
           stream.write(classfileBuffer);
+          stream.close();
         } catch (Throwable t) {
           t.printStackTrace();
         }
@@ -268,6 +274,7 @@ public class DumpingListener extends AgentBuilder.Listener.StreamWriting impleme
         String path = "./" + typeDescription.getName() + ".post.class";
         FileOutputStream stream = new FileOutputStream(path);
         stream.write(dynamicType.getBytes());
+        stream.close();
       } catch (Throwable t) {
         t.printStackTrace();
       }

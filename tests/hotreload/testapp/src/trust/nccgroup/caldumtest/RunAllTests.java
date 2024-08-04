@@ -10,5 +10,7 @@ import trust.nccgroup.caldumtest.test.*;
   TemplatedFileHookTest.class,
   TemplatedFileHookTest.class,
   TemplatedFileHookTest.class,
+  TemplatedFileHookTest.class,
+  TemplatedFileHookTest.class,
 })
 public class RunAllTests {}
