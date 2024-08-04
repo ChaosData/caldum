@@ -59,7 +59,8 @@ public class DynVarsAgent {
     AgentBuilder ab = new AgentBuilder.Default()
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
-      .disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
+      .with(AgentBuilder.InitializationStrategy.Minimal.INSTANCE)
+      //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       //.with(new AgentBuilder.Listener.StreamWriting(System.err));
       ;
 
@@ -71,130 +72,35 @@ public class DynVarsAgent {
       @Override
       public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
 
-        if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() > 0) {
-          logger.info("already transformed " + typeDescription.getName() + ", bailing out");
-          return builder;
-        } else {
-          logger.info("transforming " + typeDescription.getName());
-        }
+//        if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() > 0) {
+//          logger.info("already transformed " + typeDescription.getName() + ", bailing out");
+//          return builder;
+//        } else {
+//          logger.info("transforming " + typeDescription.getName());
+//        }
+
+//        try {
+//          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars-pre"));
+//        } catch (IOException e) {
+//          throw new RuntimeException(e);
+//        }
+
+        //if (builder.invokable(isTypeInitializer()).) {
+
+        //}
 
         try {
           Class<?> old = getSystemClassLoader().getParent().loadClass(typeDescription.getName());
           if (old.getClassLoader() == null) {
             //alreadyInjectedClass = old;
-            //System.out.println("DynVarsAgent:old: " + old);
-            //System.out.println("DynVarsAgent:old.getClassLoader(): " + old.getClassLoader()); // generally null for bootstrap
+            logger.info("DynVarsAgent:old: " + old);
+            logger.info("DynVarsAgent:old.getClassLoader(): " + old.getClassLoader()); // generally null for bootstrap
           }
         } catch (ClassNotFoundException cnfe) {
           // don't add dynvar instrumentation since it's the first time // ???? why?
-          //System.out.println("first!");
+          logger.info("first!");
           //return builder;
         }
-
-        /*if (alreadyInjectedClass == null) {
-          System.out.println("alreadyInjectedClass == null: " + typeDescription.getName());
-        }*/
-
-        //System.out.println("!!!!");
-
-//        if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() == 0) {
-//          //if ((halfcounter % 2) == 1) {
-//            logger.info("adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-//            builder = builder.defineField(DYNVARS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
-//          //} else {
-//          //  logger.info("not adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-//          //}
-//          halfcounter += 1;
-//        }
-
-
-
-//        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
-//          .method(isAnnotatedWith(Advice.OnMethodEnter.class)
-//              .or(ElementMatchers.isAnnotatedWith(Advice.OnMethodExit.class)),
-//            new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
-//              @Override
-//              public MethodVisitor wrap(TypeDescription instrumentedType,
-//                                        MethodDescription instrumentedMethod,
-//                                        MethodVisitor methodVisitor,
-//                                        Implementation.Context implementationContext,
-//                                        TypePool typePool, int writerFlags, int readerFlags) {
-//                System.out.println("ForDeclaredMethods.MethodVisitorWrapper wrap");
-//                return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor);
-//              }
-//            }));
-
-//        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredFields().field(any(), new AsmVisitorWrapper.ForDeclaredFields.FieldVisitorWrapper() {
-//          @Override
-//          public FieldVisitor wrap(TypeDescription typeDescription, FieldDescription.InDefinedShape inDefinedShape, FieldVisitor fieldVisitor) {
-//            System.out.println("FieldVisitorWrapper wrap 1: " + typeDescription.toString());
-//            return fieldVisitor;
-//          }
-//        }));
-
-//        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
-
-//        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredFields().field(any(), new AsmVisitorWrapper.ForDeclaredFields.FieldVisitorWrapper() {
-//          @Override
-//          public FieldVisitor wrap(TypeDescription typeDescription, FieldDescription.InDefinedShape inDefinedShape, FieldVisitor fieldVisitor) {
-//            System.out.println("FieldVisitorWrapper wrap 2: " + typeDescription.toString());
-//            return fieldVisitor;
-//          }
-//        }));
-
-//        return builder;
-//      }
-//    });
-
-//    abe = abe.transform(new AgentBuilder.Transformer() {
-//      @Override
-//      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
-        //System.out.println("dynamic fields w/ initializer: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-
-        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
-          .writerFlags(ClassWriter.COMPUTE_MAXS)
-          .invokable(ElementMatchers.isTypeInitializer(),
-            new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
-              @Override
-              public MethodVisitor wrap(TypeDescription instrumentedType,
-                                        MethodDescription instrumentedMethod,
-                                        MethodVisitor methodVisitor,
-                                        Implementation.Context implementationContext,
-                                        TypePool typePool, int writerFlags, int readerFlags) {
-                return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, true);
-              }
-            }));
-//      }
-//    });
-
-//    abe = abe.transform(new AgentBuilder.Transformer() {
-//      @Override
-//      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
-//        System.out.println("dynamic fields w/o initializer: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-
-        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
-          .invokable(any().and(not(isTypeInitializer())),
-//          .method(isAnnotatedWith(Advice.OnMethodEnter.class)
-//              .or(ElementMatchers.isAnnotatedWith(Advice.OnMethodExit.class)),
-            new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
-              @Override
-              public MethodVisitor wrap(TypeDescription instrumentedType,
-                                        MethodDescription instrumentedMethod,
-                                        MethodVisitor methodVisitor,
-                                        Implementation.Context implementationContext,
-                                        TypePool typePool, int writerFlags, int readerFlags) {
-                //System.out.println("ForDeclaredMethods.MethodVisitorWrapper wrap");
-                return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, false);
-              }
-            }));
-//      }
-//    });
-
-//    abe = abe.transform(new AgentBuilder.Transformer() {
-//      @Override
-//      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module) {
-        logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
 
         if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() == 0) {
           //if ((halfcounter % 2) == 1) {
@@ -204,28 +110,63 @@ public class DynVarsAgent {
           //  logger.info("not adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
           //}
           halfcounter += 1;
+        } else {
+          logger.info("not adding __dynvars__ to class (has at least one): " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
         }
+
+        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
+            .writerFlags(ClassWriter.COMPUTE_MAXS)
+            .invokable(ElementMatchers.isTypeInitializer(),
+                new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
+                  @Override
+                  public MethodVisitor wrap(TypeDescription instrumentedType,
+                                            MethodDescription instrumentedMethod,
+                                            MethodVisitor methodVisitor,
+                                            Implementation.Context implementationContext,
+                                            TypePool typePool, int writerFlags, int readerFlags) {
+                    return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, true);
+                  }
+                }));
+
+        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
+            .invokable(any().and(not(isTypeInitializer())),
+                new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
+                  @Override
+                  public MethodVisitor wrap(TypeDescription instrumentedType,
+                                            MethodDescription instrumentedMethod,
+                                            MethodVisitor methodVisitor,
+                                            Implementation.Context implementationContext,
+                                            TypePool typePool, int writerFlags, int readerFlags) {
+                    //System.out.println("ForDeclaredMethods.MethodVisitorWrapper wrap");
+                    return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, false);
+                  }
+                }));
+
+        logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
+
+
 
         return builder;
       }
     });
 
-    abe = abe.transform(new AgentBuilder.Transformer() {
-      @Override
-      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
-        try {
-          //todo: do this only when annotated for it
-          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars"));
-          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
-            System.out.println(kv.getValue());
-          }*/
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-        return builder;
-      }
-    });
-
+//    abe = abe.transform(new AgentBuilder.Transformer() {
+//      @Override
+//      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
+//        try {
+//          //todo: do this only when annotated for it
+//          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars"));
+//          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
+//            System.out.println(kv.getValue());
+//          }*/
+//        } catch (IOException e) {
+//          e.printStackTrace();
+//        }
+//        return builder;
+//      }
+//    });
+//
 
     return abe.installOn(inst);
   }

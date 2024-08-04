@@ -135,6 +135,7 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
             super.visitInsn(Opcodes.SWAP);
             super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
             super.visitInsn(Opcodes.POP);
+
             return;
           }
         }

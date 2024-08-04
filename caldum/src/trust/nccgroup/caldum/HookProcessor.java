@@ -116,8 +116,8 @@ public final class HookProcessor {
         Class<?> old = getSystemClassLoader().loadClass(hook.getName());
         if (old.getClassLoader() == null) {
           alreadyInjectedClass = old;
-          logger.log(Level.INFO, "old: " + old);
-          logger.log(Level.INFO, "old.getClassLoader(): " + old.getClassLoader());
+//          logger.log(Level.INFO, "old: " + old);
+//          logger.log(Level.INFO, "old.getClassLoader(): " + old.getClassLoader());
         }
       } catch (ClassNotFoundException cnfe) {
         // don't add dynvar instrumentation since it's the first time // ???
@@ -125,6 +125,14 @@ public final class HookProcessor {
 
       Class<?> injectedhooks[] = new Class<?>[]{null,null};
       try {
+//        logger.log(Level.INFO, "hook class fields: " + hook.getName());
+//        int counter = 0;
+//        for (Field f : hook.getDeclaredFields()) {
+//          counter += 1;
+//          logger.log(Level.INFO, "" + counter + " - " + f.toString());
+//        }
+//        Dumper.dumpClass(inst, hook, "./hook." + hook.getName() + ".class");
+
         injectedhooks[1] = BootstrapSwapInjector.swapOrInject(hook, inst, isSystem, injectedhooks);
       } catch (UnmodifiableClassException e) {
         logger.log(Level.SEVERE, "failed (unmodifiable) to swap/inject class: " + hook.getName(), e);
@@ -142,7 +150,6 @@ public final class HookProcessor {
             counter += 1;
             logger.log(Level.SEVERE, "" + counter + " - " + f.toString());
           }
-          Dumper.dumpClass(inst, hook, "./hook." + hook.getName() + ".class");
 
           try {
             Class<?> old = getSystemClassLoader().getParent().loadClass(hook.getName());
@@ -190,7 +197,7 @@ public final class HookProcessor {
           continue;
         }
 
-        initDynVars(hook);
+        //initDynVars(hook);
         copyFields(hook, injectedhook);
         DependencyInjection.injectGlobal(injectedhook, globalProvides, hook);
         DependencyInjection.injectLocal(injectedhook, localProvides, hook);

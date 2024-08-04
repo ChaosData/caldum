@@ -30,12 +30,15 @@ import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
 
 public class BootstrapSwapInjector {
 
   private static final Object lock = new Object();
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   public static Class<?> swapOrInject(Class<?> current, Instrumentation inst)
     throws UnmodifiableClassException, IOException {
@@ -128,11 +131,39 @@ public class BootstrapSwapInjector {
 
     }
 
+    try {
+      if (newClass != null) {
+        logger.info("newClass: " + newClass);
+//        logger.info("newClass.hashCode(): " + newClass.hashCode());
+        logger.info("newClass.getClassLoader(): " + newClass.getClassLoader());
+
+//        Class<?> nc = Class.forName(newClass.getName(), true, newClass.getClassLoader());
+//        Map __dynvars__ = (Map)nc.getDeclaredField("__dynvars__").get(null);
+//        logger.info("__dynvars__: " + __dynvars__);
+//        logger.info("__dynvars__.keySet(): " + __dynvars__.keySet());
+//
+//        Class<?> nc2 = Class.forName(newClass.getName(), true, ClassLoader.getSystemClassLoader());
+//        Map __dynvars__2 = (Map)nc2.getDeclaredField("__dynvars__").get(null);
+//        logger.info("__dynvars__2: " + __dynvars__2);
+//        logger.info("__dynvars__2.keySet(): " + __dynvars__2.keySet());
+
+      }
+    }/* catch (ClassNotFoundException e) {
+      logger.log(Level.SEVERE, "forName failed", e);
+    } catch (NoSuchFieldException e) {
+      logger.log(Level.SEVERE, "getDeclaredField failed", e);
+    } catch (IllegalAccessException e) {
+      logger.log(Level.SEVERE, "getDeclaredField failed", e);
+    }*/ catch (Throwable t) {
+      logger.log(Level.SEVERE, "something failed", t);
+    }
+
     return newClass;
   }
 
   public static Class<?> inject(Class<?> current, Instrumentation inst)
     throws IOException {
+    //used only for State and Hook classes
 
     synchronized (lock) {
 
@@ -169,14 +200,16 @@ public class BootstrapSwapInjector {
       inst.redefineClasses(
         new ClassDefinition(
           old,
-          ClassFileLocator.ForClassLoader.read(newer)
+            //ClassFileLocator.ForClassLoader.read(newer)
+            ClassFileLocator.ForClassLoader.ForInstrumentation.of(inst, newer).locate(newer.getName()).resolve()
         )
       );
       return getSystemClassLoader().loadClass(newer.getName());
     } catch (ClassNotFoundException e) {
-      e.printStackTrace();
+      logger.log(Level.SEVERE, "error:", e);
+    } catch (IOException e) {
+      logger.log(Level.SEVERE, "error:", e);
     }
-
     return null;
   }
 

@@ -1,5 +1,7 @@
 # Todos
 
+* after fixing dynvars, add dynannos to track DI stuff into dynvars
+
 ## Want:
 
 * Single implemntation of test code

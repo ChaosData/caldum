@@ -26,6 +26,8 @@ public class TemplatedFileHook {
     public static java.util.Map __dynvars__;
 
     static {
+      __dynvars__ = new HashMap();
+      __dynvars__.put("replacement", "wat");
     }
 
 
@@ -45,12 +47,30 @@ public class TemplatedFileHook {
     @Inject
     public static Logger logger;
 
-    public static String replacement = "__notsecret!!__";
+    public static String replacement = "__notsecret__";
+    public static String __notsecret__ = "replacement";
 
     @OnMethodExit
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
+        System.out.println("FileAbsPathHook.class: " + FileAbsPathHook.class);
+        System.out.println("FileAbsPathHook.class.hashCode(): " + FileAbsPathHook.class.hashCode());
+        System.out.println("FileAbsPathHook.class.getClassLoader(): " + FileAbsPathHook.class.getClassLoader());
+        try {
+          Map m = (Map)FileAbsPathHook.class.getDeclaredField("__dynvars__").get(null);
+          System.out.println("m: " + m);
+          System.out.println("m.keySet(): " + m.keySet());
+        } catch (Throwable t) { t.printStackTrace(); }
+        try {
+          Class<?> c = Class.forName(FileAbsPathHook.class.getName());
+          Map m2 = (Map)c.getDeclaredField("__dynvars__").get(null);
+          System.out.println("m2: " + m2);
+          System.out.println("m2.keySet(): " + m2.keySet());
+        } catch (Throwable t) { t.printStackTrace(); }
+        System.out.println("__dynvars__: " + __dynvars__);
+        System.out.println("__dynvars__.keySet(): " + __dynvars__.keySet());
+
         System.out.println("__secret__ found in File::getAbsolutePath(), returning " + replacement);
         ret = _s.replace("__secret__", "" + replacement);
       }

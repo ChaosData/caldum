@@ -21,6 +21,8 @@ public class TemplatedFileHook {
   //@Dump
   public static class FileAbsPathHook {
 
+    static {}
+
     public static class Settings {
       @Matcher.Ignore
       static ElementMatcher i = none();
