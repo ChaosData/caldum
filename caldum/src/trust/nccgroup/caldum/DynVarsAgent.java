@@ -18,19 +18,16 @@ package trust.nccgroup.caldum;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
-import net.bytebuddy.asm.Advice;
 import net.bytebuddy.asm.AsmVisitorWrapper;
 import net.bytebuddy.asm.MemberRemoval;
+import net.bytebuddy.description.annotation.AnnotationList;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.Implementation;
-import net.bytebuddy.implementation.LoadedTypeInitializer;
-import net.bytebuddy.implementation.attribute.AnnotationRetention;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.jar.asm.ClassWriter;
-import net.bytebuddy.jar.asm.FieldVisitor;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.jar.asm.Opcodes;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -41,10 +38,9 @@ import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.asm.DynamicFields;
 import trust.nccgroup.caldum.util.TmpLogger;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -52,11 +48,30 @@ import static java.lang.ClassLoader.getSystemClassLoader;
 import static net.bytebuddy.jar.asm.Opcodes.NOP;
 import static net.bytebuddy.matcher.ElementMatchers.*;
 import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
+import static trust.nccgroup.caldum.asm.DynamicFields.DYNANNOS;
+import static trust.nccgroup.caldum.asm.DynamicFields.DYNNSVARS;
 
 public class DynVarsAgent {
   private static final Logger logger = TmpLogger.DEFAULT;
 
-  public static int halfcounter = 0;
+//  public static int halfcounter = 0;
+  private static final Object lock = new Object();
+
+  public static Map<String,Map<String,AnnotationList>> annotations = new HashMap<String,Map<String,AnnotationList>>();
+
+  public static Map<String,AnnotationList> getAnnomap(String className) {
+    logger.info("getAnnomap for " + className);
+    synchronized (lock) {
+      return annotations.get(className);
+    }
+  }
+
+  public static void putAnnomap(String className, Map<String,AnnotationList> annomap) {
+    logger.info("putAnnomap for " + className);
+    synchronized (lock) {
+      annotations.put(className, annomap);
+    }
+  }
 
   public static ResettableClassFileTransformer setup(Instrumentation inst) {
 
@@ -94,6 +109,23 @@ public class DynVarsAgent {
 
         //}
 
+        // iterate fields for annotations
+        Map<String, AnnotationList> annomap = new HashMap<String, AnnotationList>();
+        for (FieldDescription.InDefinedShape field : typeDescription.getDeclaredFields()) {
+          String name = field.getActualName();
+          AnnotationList annos = field.getDeclaredAnnotations();
+          annomap.put(name, annos);
+//          for (AnnotationDescription anno : annos) {
+//            TypeDescription atd = anno.getAnnotationType();
+//            FieldList<FieldDescription.InDefinedShape> atdfs = atd.getDeclaredFields();
+//            for (FieldDescription.InDefinedShape atdf : atdfs) {
+//
+//            }
+//          }
+        }
+        putAnnomap(typeDescription.getName(), annomap);
+
+
         try {
           Class<?> old = getSystemClassLoader().getParent().loadClass(typeDescription.getName());
           if (old.getClassLoader() == null) {
@@ -107,16 +139,20 @@ public class DynVarsAgent {
           //return builder;
         }
 
-        if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).size() == 0) {
+        if (typeDescription.getDeclaredFields().filter(named(DYNVARS)).isEmpty()) {
           //if ((halfcounter % 2) == 1) {
           logger.info("adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
           builder = builder.defineField(DYNVARS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
           //} else {
           //  logger.info("not adding __dynvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
           //}
-          halfcounter += 1;
+          //halfcounter += 1;
         } else {
           logger.info("not adding __dynvars__ to class (has at least one): " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+        }
+        //todo: implement DynamicFields impl for access to non-static fields
+        if (typeDescription.getDeclaredFields().filter(named(DYNNSVARS)).isEmpty()) {
+          builder = builder.defineField(DYNNSVARS, Map.class, Opcodes.ACC_PUBLIC);
         }
 
         // we need to force a static/type initializer into existence if one doesn't exist
@@ -158,8 +194,15 @@ public class DynVarsAgent {
                   }
                 }));
 
-        logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
+//        logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+//        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
+        logger.info("removing all other static fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+        builder = builder.visit(new MemberRemoval().stripFields(ElementMatchers.<FieldDescription.InDefinedShape>isStatic().and(not(named(DYNVARS)))));
+
+
+        if (typeDescription.getDeclaredFields().filter(named(DYNANNOS)).isEmpty()) {
+          builder = builder.defineField(DYNANNOS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+        }
 
         return builder;
       }

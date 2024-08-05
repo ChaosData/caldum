@@ -1,6 +1,7 @@
 # Todos
 
-* after fixing dynvars, add dynannos to track DI stuff into dynvars
+* test `@Dynamic` with `@Dump` / figure out why `@Dump` can break unloading
+* `__dynnsvars__` non-static vars asm rewriting
 
 ## Want:
 
@@ -18,11 +19,15 @@
 * (*) multi-release jar to get around eventual issues w/ isAccessible
     * have workaround using reflection compat polyfill
 
+
 ## Have
 
 * Global no recursion (NoRecursion) wrapper
 * Single hook no recursion (NoSelfRecursion) wrapper
 * (untested) bypass no recursion for individual calls
+* `@Dynamic` working
+    * static fields in @Hook class are removed and rewired into `__dynvars__` map
+    * dependency injection works with @Dynamic
 
 # Tests
 

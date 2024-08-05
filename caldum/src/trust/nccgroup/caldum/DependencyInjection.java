@@ -16,19 +16,26 @@ limitations under the License.
 
 package trust.nccgroup.caldum;
 
+import net.bytebuddy.description.annotation.AnnotationDescription;
+import net.bytebuddy.description.annotation.AnnotationList;
+import net.bytebuddy.description.type.TypeDescription;
 import trust.nccgroup.caldum.annotation.DI;
 import trust.nccgroup.caldum.util.CompatHelper;
+import trust.nccgroup.caldum.util.TmpLogger;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public class DependencyInjection {
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   public static HashMap<String,Object> getProvides(Class<?> provider) {
 
@@ -113,28 +120,15 @@ public class DependencyInjection {
   }
 
   @SuppressWarnings({"unchecked","Duplicates"})
-  public static void injectLocal(Class<?> target, HashMap<String,Object> vals, Class<?> full) {
-    Map<String,Object> dynvars = null;
-    try {
-      Field dynvars_field = target.getDeclaredField(DYNVARS);
-      dynvars = (Map<String,Object>)dynvars_field.get(null);
-    } catch (NoSuchFieldException ignored) {
-      //ignored.printStackTrace();
-    } catch (IllegalAccessException ignored) {
-      ignored.printStackTrace();
-    }
-
-    Field[] fields = full.getDeclaredFields();
+  public static void injectLocal(Class<?> target, HashMap<String,Object> vals, Class<?> injected) {
+    //Field[] fields = full.getDeclaredFields();
+    Field[] fields = target.getDeclaredFields();
     for (Field field : fields) {
       if (!Modifier.isStatic(field.getModifiers())) {
         continue;
       }
 
-//      if (!field.isAccessible()) {
-//        field.setAccessible(true);
-//      }
       CompatHelper.trySetAccessible(field);
-
 
       if (field.getAnnotation(DI.AgentClassLoader.class) != null) {
         try {
@@ -145,12 +139,10 @@ public class DependencyInjection {
             continue;
           }
 
-          tfield.set(null, full.getClassLoader());
+          tfield.set(null, injected.getClassLoader());
         } catch (IllegalAccessException ignored) { }
         continue;
-      }
-
-      if (field.getAnnotation(DI.Inject.class) != null) {
+      } else if (field.getAnnotation(DI.Inject.class) != null) {
         continue;
       }
 
@@ -163,43 +155,56 @@ public class DependencyInjection {
         try {
           tfield = target.getDeclaredField(field.getName());
         } catch (NoSuchFieldException e) {
-          if (dynvars != null) {
-            dynvars.put(field.getName(), val);
-          }
           continue;
         }
 
         tfield.set(null, val);
-        if (dynvars != null) {
-          dynvars.put(field.getName(), val);
-        }
       } catch (IllegalAccessException ignored) { }
     }
+
+    Map<String, AnnotationList> annomap = DynVarsAgent.getAnnomap(target.getName());
+    if (annomap == null) {
+      //not dynvars
+    } else {
+      Map<String,Object> dynvars = null;
+      try {
+        dynvars = (Map<String,Object>)target.getDeclaredField(DYNVARS).get(null);
+      } catch (Throwable t) {
+        return;
+      }
+      for (String fieldname : annomap.keySet()) {
+        AnnotationList annos = annomap.get(fieldname);
+        if (annos == null) {
+          continue;
+        }
+
+        for (AnnotationDescription anno : annos) {
+          TypeDescription atd = anno.getAnnotationType();
+          String annoname = atd.getActualName();
+          if (DI.Inject.class.getName().equals(annoname)) {
+            Object val = vals.get(fieldname);
+            if (val != null) {
+              dynvars.put(fieldname, val);
+            }
+          } else if (DI.AgentClassLoader.class.getName().equals(annoname)) {
+            dynvars.put(fieldname, injected.getClassLoader());
+          }
+        }
+      }
+    }
+
   }
 
   @SuppressWarnings({"unchecked","Duplicates"})
-  public static void injectGlobal(Class<?> target, HashMap<String,Object> vals, Class<?> full) {
-    Map<String,Object> dynvars = null;
-    try {
-      Field dynvars_field = target.getDeclaredField(DYNVARS);
-      dynvars = (Map<String,Object>)dynvars_field.get(null);
-    } catch (NoSuchFieldException ignored) {
-      //ignored.printStackTrace();
-    } catch (IllegalAccessException ignored) {
-      ignored.printStackTrace();
-    }
-
-    Field[] fields = full.getDeclaredFields();
+  public static void injectGlobal(Class<?> target, HashMap<String,Object> vals/*, Class<?> full*/) {
+    //Field[] fields = full.getDeclaredFields();
+    Field[] fields = target.getDeclaredFields();
     for (Field field : fields) {
       if (!Modifier.isStatic(field.getModifiers())) {
         continue;
       }
 
-//      if (!field.isAccessible()) {
-//        field.setAccessible(true);
-//      }
       CompatHelper.trySetAccessible(field);
-
 
       if (field.getAnnotation(DI.Inject.class) == null) {
         continue;
@@ -214,17 +219,40 @@ public class DependencyInjection {
         try {
           tfield = target.getDeclaredField(field.getName());
         } catch (NoSuchFieldException e) {
-          if (dynvars != null) {
-            dynvars.put(field.getName(), val);
-          }
           continue;
         }
         tfield.set(null, val);
-        if (dynvars != null) {
-          dynvars.put(field.getName(), val);
-        }
       } catch (IllegalAccessException ignored) {
         System.out.println("should not be reached");
+      }
+    }
+
+    Map<String, AnnotationList> annomap = DynVarsAgent.getAnnomap(target.getName());
+    if (annomap == null) {
+      //not dynvars
+    } else {
+      Map<String,Object> dynvars = null;
+      try {
+        dynvars = (Map<String,Object>)target.getDeclaredField(DYNVARS).get(null);
+      } catch (Throwable t) {
+        return;
+      }
+      for (String fieldname : annomap.keySet()) {
+        AnnotationList annos = annomap.get(fieldname);
+        if (annos == null) {
+          continue;
+        }
+
+        for (AnnotationDescription anno : annos) {
+          TypeDescription atd = anno.getAnnotationType();
+          String annoname = atd.getActualName();
+          if (DI.Inject.class.getName().equals(annoname)) {
+            Object val = vals.get(fieldname);
+            if (val != null) {
+              dynvars.put(fieldname, val);
+            }
+          }
+        }
       }
     }
   }

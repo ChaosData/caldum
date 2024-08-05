@@ -12,4 +12,7 @@ public class GlobalProvider {
   @Provide(name = "logger")
   public static Logger globalInjectedLogger = TmpLogger.build("global");
 
+  @Provide(name = "wat")
+  public static String globalwat = "watwatwat";
+
 }

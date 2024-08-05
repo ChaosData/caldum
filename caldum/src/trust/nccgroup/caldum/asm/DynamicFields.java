@@ -12,6 +12,8 @@ import java.util.logging.Logger;
 
 public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
   public static final String DYNVARS = "__dynvars__";
+  public static final String DYNANNOS = "__dynannos__";
+  public static final String DYNNSVARS = "__dynnsvars__";
   private static final Logger logger = TmpLogger.DEFAULT;
 
   private final String iclass;

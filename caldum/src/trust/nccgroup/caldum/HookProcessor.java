@@ -131,7 +131,9 @@ public final class HookProcessor {
 //          counter += 1;
 //          logger.log(Level.INFO, "" + counter + " - " + f.toString());
 //        }
-//        Dumper.dumpClass(inst, hook, "./hook." + hook.getName() + ".class");
+        if (hook.getAnnotation(Dump.class) != null) {
+          Dumper.dumpClass(inst, hook, "./hook." + hook.getName() + ".class");
+        }
 
         injectedhooks[1] = BootstrapSwapInjector.swapOrInject(hook, inst, isSystem, injectedhooks);
       } catch (UnmodifiableClassException e) {
@@ -198,9 +200,11 @@ public final class HookProcessor {
         }
 
         //initDynVars(hook);
+        //DependencyInjection.injectGlobal(injectedhook, globalProvides, hook);
+        //DependencyInjection.injectLocal(injectedhook, localProvides, hook);
+        DependencyInjection.injectGlobal(hook, globalProvides);
+        DependencyInjection.injectLocal(hook, localProvides, injectedhook);
         copyFields(hook, injectedhook);
-        DependencyInjection.injectGlobal(injectedhook, globalProvides, hook);
-        DependencyInjection.injectLocal(injectedhook, localProvides, hook);
 
         if (injectedhook == injectedhooks[0]) {
           // yes, ==, we only want to set up the fields on the classpath version
@@ -237,12 +241,12 @@ public final class HookProcessor {
 
   @SuppressWarnings("unchecked")
   private static void copyFields(Class<?> hook, Class<?> bootstrapHook) {
-    Map<String,Object> dynvars = null;
-    try {
-      Field dynvars_field = hook.getDeclaredField(DYNVARS);
-      dynvars = (Map<String,Object>)dynvars_field.get(null);
-    } catch (NoSuchFieldException ignored) { }
-    catch (IllegalAccessException ignored) { }
+//    Map<String,Object> dynvars = null;
+//    try {
+//      Field dynvars_field = hook.getDeclaredField(DYNVARS);
+//      dynvars = (Map<String,Object>)dynvars_field.get(null);
+//    } catch (NoSuchFieldException ignored) { }
+//    catch (IllegalAccessException ignored) { }
 
     for (Field field : hook.getDeclaredFields()) {
       if (!Modifier.isStatic(field.getModifiers())) {
@@ -270,7 +274,7 @@ public final class HookProcessor {
       try {
         nfield = bootstrapHook.getDeclaredField(field.getName());
       } catch (NoSuchFieldException nsfe) {
-        logger.log(Level.SEVERE, "unable to copy static initialized field", nsfe);
+        logger.log(Level.SEVERE, "unable to copy static initialized field " + field.getName(), nsfe);
         continue;
       }
 
@@ -281,11 +285,11 @@ public final class HookProcessor {
 
       try {
         nfield.set(null, val);
-        if (!DYNVARS.equals(field.getName())) {
-          if (dynvars != null) {
-            dynvars.put(field.getName(), val);
-          }
-        }
+//        if (!DYNVARS.equals(field.getName())) {
+//          if (dynvars != null) {
+//            dynvars.put(field.getName(), val);
+//          }
+//        }
       } catch (IllegalAccessException iae) {
         logger.log(Level.SEVERE, "unable to copy static initialized field", iae);
       }

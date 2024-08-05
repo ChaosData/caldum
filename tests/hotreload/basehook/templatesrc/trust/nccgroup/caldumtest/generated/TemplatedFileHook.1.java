@@ -38,11 +38,14 @@ public class TemplatedFileHook {
 
     @Inject
     public static Logger logger;
+    @Inject
+    public static String wat;
 
     @OnMethodExit
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
+        System.out.println("wat: " + wat);
         System.out.println("__secret__ found in File::getAbsolutePath(), returning __notsecret__");
         ret = _s.replace("__secret__", "__notsecret__");
       }
