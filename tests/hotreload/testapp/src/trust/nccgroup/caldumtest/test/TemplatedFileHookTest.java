@@ -44,7 +44,7 @@ public class TemplatedFileHookTest {
     String s = f.getAbsolutePath();
     String c = getCheckValue();
     if (s.indexOf(c) == -1) {
-      throw new AssertionError("failure[" + i + "]: could not find `" + c + "` in " + s);
+      throw new AssertionError("failure[#" + i+1 + "]: could not find `" + c + "` in " + s);
     }
   }
 

@@ -26,6 +26,9 @@ import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.Implementation;
+import net.bytebuddy.implementation.LoadedTypeInitializer;
+import net.bytebuddy.implementation.attribute.AnnotationRetention;
+import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.jar.asm.ClassWriter;
 import net.bytebuddy.jar.asm.FieldVisitor;
 import net.bytebuddy.jar.asm.MethodVisitor;
@@ -46,6 +49,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
+import static net.bytebuddy.jar.asm.Opcodes.NOP;
 import static net.bytebuddy.matcher.ElementMatchers.*;
 import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
@@ -60,6 +64,7 @@ public class DynVarsAgent {
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
       .with(AgentBuilder.InitializationStrategy.Minimal.INSTANCE)
+
       //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       //.with(new AgentBuilder.Listener.StreamWriting(System.err));
       ;
@@ -114,6 +119,17 @@ public class DynVarsAgent {
           logger.info("not adding __dynvars__ to class (has at least one): " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
         }
 
+        // we need to force a static/type initializer into existence if one doesn't exist
+        // it's unclear from the bytebuddy api if there's a good wey to figure out if one
+        // is already there to begin with, so adding a NOP to an existing one if it's there should be relatively safe.
+        builder = builder.initializer(new ByteCodeAppender() {
+          @Override
+          public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+            methodVisitor.visitInsn(NOP);
+            return Size.ZERO;
+          }
+        });
+
         builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
             .writerFlags(ClassWriter.COMPUTE_MAXS)
             .invokable(ElementMatchers.isTypeInitializer(),
@@ -144,8 +160,6 @@ public class DynVarsAgent {
 
         logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
         builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
-
-
 
         return builder;
       }
