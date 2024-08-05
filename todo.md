@@ -2,13 +2,16 @@
 
 * test `@Dynamic` with `@Dump` / figure out why `@Dump` can break unloading
 * `__dynnsvars__` non-static vars asm rewriting
+* dockerify hotreload tests
 
 ## Want:
 
 * Single implemntation of test code
-    * JavaParse codegen to "update" hooks?
-    * Code selectively built based on java version being tested on
-    * Hooks built into separate JARs combined with scripting out vl attach/detach in phases
+    * (*) Code selectively built based on java version being tested on
+        * have some of this with the hotreload tests
+    * JavaParser codegen to "update" hooks?
+    * (x) Hooks built into separate JARs combined with scripting out vl attach/detach in phases
+        * hotreload tests does this
     * Maybe dynamically generate docker entrypoint shell script?
 * To figure out why logger crashed in `./gradlew test`
     * Does it happen w/ raw junit?
@@ -31,21 +34,21 @@
 
 # Tests
 
-## Have Tests For:
+## Have:
 
+* test harness (e.g. provide java version, gets plugged into docker script depending on version)
 * premain (bootstrap + spring)
 * agentmain (bootstrap + spring)
 * java 6/7 (hotspot)
 * java 8/9+ (hotspot/openj9, tested up to 21)
-* test harness (e.g. provide java version, gets plugged into docker script depending on version)
+* Multiple attach/detach cycles
+* Hot reload/In-place hook upgrade (including for bootstrap hooks)
 
-## Need Tests For:
+## Need:
 
 * CLI args
 * Config file
 * Detach cleanup
-* Multiple attach/detach cycles
-* In-place hook upgrade (including for bootstrap hooks)
 * Multiple JARs with colliding classes
 * Anti-debugging
 
