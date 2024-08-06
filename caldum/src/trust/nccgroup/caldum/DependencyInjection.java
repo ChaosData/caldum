@@ -30,8 +30,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static trust.nccgroup.caldum.asm.DynamicFields.DYNANNOS;
 import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public class DependencyInjection {
@@ -192,6 +194,20 @@ public class DependencyInjection {
         }
       }
     }
+
+//    Map<String, Annotation[]> annomap2 = null;
+//    try {
+//      annomap2 = (Map<String, Annotation[]>)target.getDeclaredField(DYNANNOS).get(null);
+//    } catch (NoSuchFieldException e) {
+//      logger.log(Level.SEVERE, "nfe on " + target, e);
+//    } catch (IllegalAccessException e) {
+//      logger.log(Level.SEVERE, "iae on" + target, e);
+//    }
+//
+//    logger.info("annomap2: " + annomap2);
+//    if (annomap2 != null) {
+//    }
+
 
   }
 

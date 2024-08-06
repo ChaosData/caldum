@@ -20,12 +20,15 @@ import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.asm.AsmVisitorWrapper;
 import net.bytebuddy.asm.MemberRemoval;
+import net.bytebuddy.description.annotation.AnnotationDescription;
 import net.bytebuddy.description.annotation.AnnotationList;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.dynamic.TypeResolutionStrategy;
 import net.bytebuddy.implementation.Implementation;
+import net.bytebuddy.implementation.LoadedTypeInitializer;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.jar.asm.ClassWriter;
 import net.bytebuddy.jar.asm.MethodVisitor;
@@ -33,15 +36,18 @@ import net.bytebuddy.jar.asm.Opcodes;
 import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.utility.JavaModule;
+import trust.nccgroup.caldum.annotation.DI;
 import trust.nccgroup.caldum.annotation.Dynamic;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.asm.DynamicFields;
 import trust.nccgroup.caldum.util.TmpLogger;
 
+import java.lang.annotation.Annotation;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
@@ -57,6 +63,10 @@ public class DynVarsAgent {
 //  public static int halfcounter = 0;
   private static final Object lock = new Object();
 
+  //note: i was originally thinking of stashing something like __dynannos__ in each @Dynamic @Hook class,
+  //      but for now, using a single locked map works ok. will still probably eventually do the former,
+  //      but then i'll probably want to convert to actual annotation objects instead of sort of string/ast
+  //      wrapping around them.
   public static Map<String,Map<String,AnnotationList>> annotations = new HashMap<String,Map<String,AnnotationList>>();
 
   public static Map<String,AnnotationList> getAnnomap(String className) {
@@ -79,7 +89,6 @@ public class DynVarsAgent {
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
       .with(AgentBuilder.InitializationStrategy.Minimal.INSTANCE)
-
       //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       //.with(new AgentBuilder.Listener.StreamWriting(System.err));
       ;
@@ -125,6 +134,31 @@ public class DynVarsAgent {
         }
         putAnnomap(typeDescription.getName(), annomap);
 
+        Map<String, Annotation[]> annomap2 = new HashMap<String, Annotation[]>();
+        for (FieldDescription.InDefinedShape field : typeDescription.getDeclaredFields()) {
+          String fieldname = field.getActualName();
+          AnnotationList annos = field.getDeclaredAnnotations();
+          Annotation[] annoarr = new Annotation[annos.size()];
+          for (int i = 0; i < annoarr.length; i++) {
+            AnnotationDescription ad = annos.get(i);
+            String classname = ad.getAnnotationType().getActualName();
+            Class<? extends Annotation> clazz = null;
+            try {
+              Class<?> _clazz = Class.forName(classname);
+              if (_clazz.isAssignableFrom(Annotation.class)) {
+                clazz = _clazz.asSubclass(Annotation.class);
+              }
+            } catch (ClassNotFoundException e) {
+              logger.log(Level.SEVERE, "could not find class", e);
+            } catch (ClassCastException e) {
+              logger.log(Level.SEVERE, "failed to cast annotation class to Class<Annotation>", e);
+            }
+            if (clazz != null) {
+              annoarr[i] = ad.prepare(clazz).load();
+            }
+          }
+          annomap2.put(fieldname, annoarr);
+        }
 
         try {
           Class<?> old = getSystemClassLoader().getParent().loadClass(typeDescription.getName());
@@ -158,6 +192,7 @@ public class DynVarsAgent {
         // we need to force a static/type initializer into existence if one doesn't exist
         // it's unclear from the bytebuddy api if there's a good wey to figure out if one
         // is already there to begin with, so adding a NOP to an existing one if it's there should be relatively safe.
+        // note: we may not need this now that we're adding an initializer for __dynannos__. (nope, not yet at least)
         builder = builder.initializer(new ByteCodeAppender() {
           @Override
           public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
@@ -197,12 +232,15 @@ public class DynVarsAgent {
 //        logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
 //        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
         logger.info("removing all other static fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
-        builder = builder.visit(new MemberRemoval().stripFields(ElementMatchers.<FieldDescription.InDefinedShape>isStatic().and(not(named(DYNVARS)))));
+        builder = builder.visit(new MemberRemoval().stripFields(ElementMatchers.<FieldDescription.InDefinedShape>isStatic().and(not(named(DYNVARS).or(named(DYNANNOS))))));
 
 
         if (typeDescription.getDeclaredFields().filter(named(DYNANNOS)).isEmpty()) {
           builder = builder.defineField(DYNANNOS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
         }
+        //this doesn't appear to actually work or do anything
+        //builder = builder.initializer(new LoadedTypeInitializer.ForStaticField(DYNANNOS, annomap2));
+
 
         return builder;
       }
