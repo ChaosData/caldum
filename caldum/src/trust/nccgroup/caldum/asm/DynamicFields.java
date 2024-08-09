@@ -5,9 +5,13 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.jar.asm.Opcodes;
 import net.bytebuddy.utility.visitor.StackAwareMethodVisitor;
+import trust.nccgroup.caldum.annotation.Dynamic;
 import trust.nccgroup.caldum.util.TmpLogger;
 
+import java.lang.annotation.Annotation;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
@@ -19,6 +23,8 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
   private final String iclass;
   private final MethodDescription instrumentedMethod;
   private final boolean forInitializer;
+
+  public static Map<String, Boolean> owners_dynamic = new HashMap<String, Boolean>();
 
   public DynamicFields(Class<?> clazz,
                        MethodDescription instrumentedMethod,
@@ -47,6 +53,10 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
     this.forInitializer = forInitializer;
   }
 
+  private static String external(String s) {
+    return s.replace('/','.');
+  }
+
   private static String internal(String s) {
     return s.replace('.','/');
   }
@@ -70,15 +80,43 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
 
     boolean doswap = false;
 
-//    if ("foobar".equals(name)) {
-//      name = DYNVARS;
-//    }
-
-
     if (opcode == GETSTATIC || opcode == PUTSTATIC) {
-      if (iclass.equals(owner) && !DYNVARS.equals(name)) {
+      //logger.info("opcode: " + opcode + " owner: " + owner + " name: " + name + " desc: " + desc + " iclass: " + iclass);
+      boolean is_dynamic = iclass.equals(owner);
+      if (!is_dynamic) {
+        Boolean owner_dynamic = owners_dynamic.get(owner);
+        if (owner_dynamic == null) {
+          try {
+            Class<?> c = Class.forName(external(owner));
+            Annotation[] cas = c.getDeclaredAnnotations();
+
+            for (Annotation ca : cas) {
+              if (ca.annotationType().getName().equals(Dynamic.NAME)) {
+                is_dynamic = true;
+                owners_dynamic.put(owner, Boolean.TRUE);
+                break;
+              }
+            }
+            //this appears to fail to find the annotations, probably b/c the bootstrap injected version
+            //is considered different from the .class one here
+//            Dynamic d = c.getAnnotation(Dynamic.class);
+//            if (d != null) {
+//              logger.info("is_dynamic: true for " + owner + " " + name);
+//              is_dynamic = true;
+//              owners_dynamic.put(owner, Boolean.TRUE);
+//            }
+          } catch (Throwable t) {
+            //probably possible to get in a loop if two @Dynamic classes refer to each other
+            //might need to do this another way
+            //maybe force reload/reinstrument after the other classes are loaded
+            logger.log(Level.SEVERE, "error loading class", t);
+          }
+        }
+      }
+
+      if (is_dynamic && !DYNVARS.equals(name)) {
         if (opcode == GETSTATIC) {
-          super.visitFieldInsn(GETSTATIC, iclass, DYNVARS, "Ljava/util/Map;");
+          super.visitFieldInsn(GETSTATIC, owner, DYNVARS, "Ljava/util/Map;");
           super.visitLdcInsn(name);
           super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
           if ("J".equals(desc)) {
@@ -131,7 +169,7 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
           } else {
             // because the value is already on the stack, we play some tricks to shift it down
             //   without using a local variable.
-            super.visitFieldInsn(GETSTATIC, iclass, DYNVARS, "Ljava/util/Map;");
+            super.visitFieldInsn(GETSTATIC, owner, DYNVARS, "Ljava/util/Map;");
             super.visitInsn(Opcodes.SWAP);
             super.visitLdcInsn(name);
             super.visitInsn(Opcodes.SWAP);

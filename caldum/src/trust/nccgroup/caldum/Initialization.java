@@ -16,7 +16,7 @@ limitations under the License.
 
 package trust.nccgroup.caldum;
 
-import trust.nccgroup.caldum.annotation.Hook;
+import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.bluepill.JavaAgentHiderHooks;
 import trust.nccgroup.caldum.global.State;
 
@@ -27,17 +27,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Initialization {
   private static final AtomicBoolean initialized = new AtomicBoolean(false);
 
+  private static final Class<?>[] injects = new Class[]{
+    State.class, Hook.class, Debug.class, Dump.class, DumpWrappers.class,
+    Dynamic.class, Wrapper.OnMethodEnter.class, Wrapper.OnMethodExit.class,
+    DI.Inject.class, DI.AgentClassLoader.class, DI.Provide.class,
+    DI.Provider.class, Matcher.class, Test.class
+  };
+
   static void run(Instrumentation inst) {
     if (initialized.getAndSet(true)) {
       return;
     }
 
-    try {
-      BootstrapSwapInjector.inject(State.class, inst);
-    } catch (IOException ignore) { }
-    try {
-      BootstrapSwapInjector.inject(Hook.class, inst);
-    } catch (IOException ignore) { }
+    //we have to inject (all of?) these in so that they can be
+    //properly referenced from the bootstrap classloader versions
+    //of hooks, especially the class @annotations.
+    for (Class<?> c : injects) {
+      try {
+        BootstrapSwapInjector.inject(c, inst);
+      } catch (IOException ignore) { }
+    }
 
     // We try to hook every @Hook-annotated class on initial load so that we
     // can add add the __dynvars__ variable to it.

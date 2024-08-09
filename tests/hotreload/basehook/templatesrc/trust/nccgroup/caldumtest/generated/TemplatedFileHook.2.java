@@ -15,6 +15,8 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
 import static trust.nccgroup.caldum.annotation.Matcher.Member;
 import static trust.nccgroup.caldum.annotation.Matcher.Type;
 
+import trust.nccgroup.caldumtest.DumbHook;
+
 public class TemplatedFileHook {
   @Hook
   @Dynamic
@@ -44,7 +46,8 @@ public class TemplatedFileHook {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
         System.out.println("__secret__ found in File::getAbsolutePath(), returning __notsecret!__");
-        ret = _s.replace("__secret__", "__notsecret!__");
+        ret = _s.replace("__secret__", DumbHook.NopHook.retval);
+        //ret = _s.replace("__secret__", "__notsecret!__");
       }
     }
 

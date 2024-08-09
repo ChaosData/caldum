@@ -29,6 +29,7 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.TypeResolutionStrategy;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.LoadedTypeInitializer;
+import net.bytebuddy.implementation.attribute.TypeAttributeAppender;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.jar.asm.ClassWriter;
 import net.bytebuddy.jar.asm.MethodVisitor;
@@ -70,10 +71,14 @@ public class DynVarsAgent {
   public static Map<String,Map<String,AnnotationList>> annotations = new HashMap<String,Map<String,AnnotationList>>();
 
   public static Map<String,AnnotationList> getAnnomap(String className) {
-    logger.info("getAnnomap for " + className);
+    Map<String,AnnotationList> mal = null;
     synchronized (lock) {
-      return annotations.get(className);
+      mal = annotations.get(className);
     }
+    if (mal != null) {
+      logger.info("getAnnomap for " + className);
+    }
+    return mal;
   }
 
   public static void putAnnomap(String className, Map<String,AnnotationList> annomap) {
@@ -89,7 +94,8 @@ public class DynVarsAgent {
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
       .with(AgentBuilder.InitializationStrategy.Minimal.INSTANCE)
-      //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
+
+    //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       //.with(new AgentBuilder.Listener.StreamWriting(System.err));
       ;
 
@@ -184,10 +190,10 @@ public class DynVarsAgent {
         } else {
           logger.info("not adding __dynvars__ to class (has at least one): " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
         }
-        //todo: implement DynamicFields impl for access to non-static fields
-        if (typeDescription.getDeclaredFields().filter(named(DYNNSVARS)).isEmpty()) {
-          builder = builder.defineField(DYNNSVARS, Map.class, Opcodes.ACC_PUBLIC);
-        }
+//        //todo: implement DynamicFields impl for access to non-static fields
+//        if (typeDescription.getDeclaredFields().filter(named(DYNNSVARS)).isEmpty()) {
+//          builder = builder.defineField(DYNNSVARS, Map.class, Opcodes.ACC_PUBLIC);
+//        }
 
         // we need to force a static/type initializer into existence if one doesn't exist
         // it's unclear from the bytebuddy api if there's a good wey to figure out if one

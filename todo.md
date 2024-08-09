@@ -31,6 +31,8 @@
 * `@Dynamic` working
     * static fields in @Hook class are removed and rewired into `__dynvars__` map
     * dependency injection works with @Dynamic
+    * dynvar instrumentation when accessing other @Dynamic classes
+
 
 # Tests
 

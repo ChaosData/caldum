@@ -35,6 +35,7 @@ import java.util.jar.Manifest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.SEVERE;
 
 public final class AgentLoader {
@@ -327,15 +328,15 @@ public final class AgentLoader {
         ), nsme);
       }
     } else {
-      logger.log(SEVERE, "ah.agentClass == null");
+      logger.log(INFO, "ah.agentClass == null");
     }
 
     if (ah.rcfts != null) {
       ret = true;
       ArrayList<DestructingResettableClassFileTransformer> nrcfts = new ArrayList<DestructingResettableClassFileTransformer>();
       for (int i=0; i < ah.rcfts.size(); i++) {
-        DestructingResettableClassFileTransformer rcft = ah.rcfts.remove(0);
-        logger.log(SEVERE, "rcft: " + rcft);
+        DestructingResettableClassFileTransformer rcft = ah.rcfts.get(i);
+        logger.log(INFO, "rcft: " + rcft);
         if (!rcft.reset(ah.inst, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)) {
           // currently failing on the @Debug/@Dump annotated magic listener/wrapper class
           logger.log(SEVERE, "rcft.reset(): failed");
@@ -346,7 +347,11 @@ public final class AgentLoader {
       ah.rcfts = nrcfts;
     } else {
       //System.out.println("ah.rcfts == null");
-      logger.log(SEVERE, "ah.rcfts == null");
+      logger.log(INFO, "ah.rcfts == null");
+    }
+
+    if (ret == false) {
+      logger.log(SEVERE, "failed to unload agent");
     }
     return ret;
   }

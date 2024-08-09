@@ -19,6 +19,7 @@ package trust.nccgroup.caldum;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import trust.nccgroup.caldum.annotation.DI;
 import trust.nccgroup.caldum.annotation.Dump;
+import trust.nccgroup.caldum.annotation.Dynamic;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.util.CompatHelper;
 import trust.nccgroup.caldum.util.Dumper;
@@ -67,6 +68,7 @@ public final class HookProcessor {
       new ArrayList<DestructingResettableClassFileTransformer>(8);
 
     ArrayList<Class<?>> hooks = new ArrayList<Class<?>>(8);
+    ArrayList<Class<?>> dynamic_hooks = new ArrayList<Class<?>>(8);
     ArrayList<Class<?>> providers = new ArrayList<Class<?>>(8);
     HashMap<String,Object> globalProvides = new HashMap<String, Object>(16);
 
@@ -91,6 +93,9 @@ public final class HookProcessor {
       }
       if (c.getAnnotation(Hook.class) != null) {
         hooks.add(c);
+        if (c.getAnnotation(Dynamic.class) != null) {
+          dynamic_hooks.add(c);
+        }
       } else if (c.getAnnotation(DI.Provider.class) != null) {
         providers.add(c);
       }
@@ -98,6 +103,15 @@ public final class HookProcessor {
 
     for (Class<?> provider : providers) {
       globalProvides.putAll(DependencyInjection.getProvides(provider));
+    }
+
+    //force reinstruument the dynamics now that they're all loaded
+    for (Class<?> dynamic_hook : dynamic_hooks) {
+      try {
+        inst.retransformClasses(new Class[]{dynamic_hook});
+      } catch (UnmodifiableClassException e) {
+        logger.log(Level.SEVERE, "Failed to retransform @Dynamic class " + dynamic_hook, e);
+      }
     }
 
     for (Class<?> hook : hooks) {
@@ -218,7 +232,12 @@ public final class HookProcessor {
             PluggableAdviceAgent.Builder.fromClass(configClass).build(inst, alreadyInjectedClass),
             injectedhook
           );
-          logger.log(Level.INFO, "applied hook for " + configClass.getDeclaringClass().toString());
+          if (!rcft.isBad()) {
+            logger.log(Level.INFO, "applied hook for " + configClass.getDeclaringClass().toString());
+          } else {
+            logger.severe("rcft is bad");
+            continue;
+          }
         } catch (PluggableAdviceAgent.BuildException e) {
           logger.log(Level.SEVERE, "failed to build hook", e);
           continue;

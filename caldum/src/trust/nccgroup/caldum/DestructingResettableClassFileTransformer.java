@@ -54,7 +54,16 @@ public class DestructingResettableClassFileTransformer {
     loaded = _loaded;
   }
 
+  boolean isBad() {
+    return rcft == null;
+  }
+
   boolean reset(Instrumentation inst, AgentBuilder.RedefinitionStrategy strat) {
+    if (isBad()) {
+      logger.log(Level.SEVERE, "reset failed (bailed): loaded: " + loaded + ", rcft: " + rcft);
+      return false;
+    }
+
     Field[] fields = loaded.getDeclaredFields();
     for (Field field : fields) {
       if (!Modifier.isStatic(field.getModifiers()) && !field.getType().isPrimitive()) {

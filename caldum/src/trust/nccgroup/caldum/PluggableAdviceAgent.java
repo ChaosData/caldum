@@ -38,6 +38,7 @@ import net.bytebuddy.utility.JavaModule;
 import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.asm.DynamicFields;
 import trust.nccgroup.caldum.util.CompatHelper;
+import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.lang.annotation.Annotation;
 import java.lang.instrument.Instrumentation;
@@ -48,12 +49,15 @@ import java.lang.reflect.Modifier;
 import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
 import static net.bytebuddy.matcher.ElementMatchers.*;
 import static trust.nccgroup.caldum.asm.DynamicFields.DYNVARS;
 
 public class PluggableAdviceAgent {
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   public static class Builder {
 
@@ -412,25 +416,37 @@ public class PluggableAdviceAgent {
       }
       alt_hook_bytes = dtb.make().getBytes();
 
-      AgentBuilder.Identified.Extendable abe;
+      AgentBuilder.Identified.Extendable abe = null;
 
       if (alt_hook_bytes == null) {
-        abe = abn.transform(
-          new AdviceTransformer(inst, hookClass, memberMatcher)
-        );
+        try {
+          abe = abn.transform(
+              new AdviceTransformer(inst, hookClass, memberMatcher)
+          );
+        } catch (Throwable t) {
+          logger.log(Level.SEVERE, "AdviceTransformer error", t);
+        }
       } else {
         if (dump_wrappers) {
           SimpleDumpingClassFileTransformer.dump(inst, hookClass, "");
           SimpleDumpingClassFileTransformer.dump(inst, hookClass, ".wrapped", alt_hook_bytes);
         }
-        abe = abn.transform(
-          new AdviceTransformer(hookClass, alt_hook_bytes, memberMatcher)
-        );
+        try {
+          abe = abn.transform(
+              new AdviceTransformer(hookClass, alt_hook_bytes, memberMatcher)
+          );
+        } catch (Throwable t) {
+          logger.log(Level.SEVERE, "AdviceTransformer error", t);
+        }
       }
       //if (dump) {
       //  return abe.installOn(inst, dl);
       //} else {
-        return abe.installOn(inst);
+
+      if (abe == null) {
+        return null;
+      }
+      return abe.installOn(inst);
       //}
 
     }
