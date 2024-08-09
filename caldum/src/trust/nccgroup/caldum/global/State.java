@@ -17,6 +17,8 @@ limitations under the License.
 package trust.nccgroup.caldum.global;
 
 //import java.util.*;
+import trust.nccgroup.caldum.annotation.Wrapper;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +29,11 @@ public class State {
   // the separate class (the wrapped hook class, not the class it hooks)
   // tracking is done to ensure that a lone exit hook down the call stack
   // from an enter-exit hook does not muck with the state
+
+  public static final String NAME = State.class.getName();
+  public static class Bootstrap {
+    public static Class<?> INSTANCE = null;
+  }
 
   public static final State ENTER_ENTER = new State(0, State.class);
   public static final State ENTER_EXIT = new State(1, State.class);

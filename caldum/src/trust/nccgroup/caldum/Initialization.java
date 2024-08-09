@@ -19,19 +19,27 @@ package trust.nccgroup.caldum;
 import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.bluepill.JavaAgentHiderHooks;
 import trust.nccgroup.caldum.global.State;
+import trust.nccgroup.caldum.util.CompatHelper;
+import trust.nccgroup.caldum.util.TmpLogger;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Initialization {
   private static final AtomicBoolean initialized = new AtomicBoolean(false);
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   private static final Class<?>[] injects = new Class[]{
     State.class, Hook.class, Debug.class, Dump.class, DumpWrappers.class,
     Dynamic.class, Wrapper.OnMethodEnter.class, Wrapper.OnMethodExit.class,
     DI.Inject.class, DI.AgentClassLoader.class, DI.Provide.class,
-    DI.Provider.class, Matcher.class, Test.class
+    DI.Provider.class, Matcher.class, Matcher.Ignore.class, Matcher.Member.class,
+    Matcher.Module.class, Matcher.Raw.class, Matcher.Loader.class,
+    Matcher.Type.class, Test.class
   };
 
   static void run(Instrumentation inst) {
@@ -41,12 +49,54 @@ public class Initialization {
 
     //we have to inject (all of?) these in so that they can be
     //properly referenced from the bootstrap classloader versions
-    //of hooks, especially the class @annotations.
+    //of hooks, especially the class @annotations. otherwise the
+    //hook classes end up not having the annotations on them
     for (Class<?> c : injects) {
       try {
         BootstrapSwapInjector.inject(c, inst);
+        Class<?> cb = null;
+
+        try {
+          cb = Class.forName(c.getName(), true, null);
+          if (c.equals(cb)) {
+            logger.severe("c.equals(cb): should not happen here!!");
+            continue;
+          } else {
+//            logger.info("successfully injected: " + c);
+          }
+        } catch (Throwable t) {
+          logger.log(Level.SEVERE, "failed to load bootstrap injected class " + c, t);
+          continue;
+        }
+
+        Class<?>[] cs = c.getDeclaredClasses();
+        for (Class<?> c1 : cs) {
+          Class<?> bootstrap = null;
+          if (!c1.getName().endsWith("$Bootstrap")) {
+            continue;
+          }
+          bootstrap = c1;
+
+          BootstrapSwapInjector.inject(bootstrap, inst);
+
+          try {
+            Class<?> bootstrapb = Class.forName(bootstrap.getName(), true, null);
+
+            Field INSTANCE = bootstrap.getDeclaredField("INSTANCE");
+            CompatHelper.trySetAccessible(INSTANCE);
+            Field INSTANCEb = bootstrapb.getDeclaredField("INSTANCE");
+            CompatHelper.trySetAccessible(INSTANCEb);
+
+            INSTANCE.set(null, cb);
+            INSTANCEb.set(null, cb);
+//            logger.info("successfully set Bootstrap.INSTANCE(s) for " + c);
+          } catch (Throwable t) {
+            logger.log(Level.SEVERE, "error on " + c.getName(), t);
+          }
+        }
       } catch (IOException ignore) { }
     }
+
 
     // We try to hook every @Hook-annotated class on initial load so that we
     // can add add the __dynvars__ variable to it.

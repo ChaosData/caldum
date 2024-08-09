@@ -3,6 +3,7 @@
 * test `@Dynamic` with `@Dump` / figure out why `@Dump` can break unloading
 * `__dynnsvars__` non-static vars asm rewriting
 * dockerify hotreload tests
+* add support for disabling all @Dynamic plumbing / bootstrap injection
 
 ## Want:
 

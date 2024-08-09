@@ -16,27 +16,56 @@ limitations under the License.
 
 package trust.nccgroup.caldum.annotation;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 public class Matcher {
   @Retention(RetentionPolicy.RUNTIME)
-  public static @interface Ignore { }
+  public static @interface Ignore {
+    public static final String NAME = Ignore.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
+  }
 
   @Retention(RetentionPolicy.RUNTIME)
-  public static @interface Raw { }
-
-
-  @Retention(RetentionPolicy.RUNTIME)
-  public static @interface Type { }
-
-  @Retention(RetentionPolicy.RUNTIME)
-  public static @interface Loader { }
+  public static @interface Raw {
+    public static final String NAME = Raw.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
+  }
 
   @Retention(RetentionPolicy.RUNTIME)
-  public static @interface Module { }
-
+  public static @interface Type {
+    public static final String NAME = Type.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
+  }
 
   @Retention(RetentionPolicy.RUNTIME)
-  public static @interface Member { }
+  public static @interface Loader {
+    public static final String NAME = Loader.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  public static @interface Module {
+    public static final String NAME = Module.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  public static @interface Member {
+    public static final String NAME = Member.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
+  }
 }

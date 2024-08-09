@@ -16,10 +16,15 @@ limitations under the License.
 
 package trust.nccgroup.caldum.annotation;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Debug {
+  public static final String NAME = Debug.class.getName();
 
+  public static class Bootstrap {
+    public static Class<? extends Annotation> INSTANCE = null;
+  }
 }

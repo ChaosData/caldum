@@ -85,18 +85,26 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
       boolean is_dynamic = iclass.equals(owner);
       if (!is_dynamic) {
         Boolean owner_dynamic = owners_dynamic.get(owner);
-        if (owner_dynamic == null) {
+        if (owner_dynamic != null) {
+          is_dynamic = owner_dynamic;
+        } else {
           try {
-            Class<?> c = Class.forName(external(owner));
-            Annotation[] cas = c.getDeclaredAnnotations();
-
-            for (Annotation ca : cas) {
-              if (ca.annotationType().getName().equals(Dynamic.NAME)) {
-                is_dynamic = true;
-                owners_dynamic.put(owner, Boolean.TRUE);
-                break;
-              }
+            Class<?> c = Class.forName(external(owner), true, null);
+            Annotation d = c.getAnnotation(Dynamic.Bootstrap.INSTANCE);
+            if (d != null) {
+              is_dynamic = true;
+//              logger.info("is_dynamic: true for " + owner + " " + name);
+              owners_dynamic.put(owner, Boolean.TRUE);
             }
+
+//            Annotation[] cas = c.getDeclaredAnnotations();
+//            for (Annotation ca : cas) {
+//              if (ca.annotationType().getName().equals(Dynamic.NAME)) {
+//                is_dynamic = true;
+//                owners_dynamic.put(owner, Boolean.TRUE);
+//                break;
+//              }
+//            }
             //this appears to fail to find the annotations, probably b/c the bootstrap injected version
             //is considered different from the .class one here
 //            Dynamic d = c.getAnnotation(Dynamic.class);

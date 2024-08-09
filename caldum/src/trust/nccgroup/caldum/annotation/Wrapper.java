@@ -16,17 +16,24 @@ limitations under the License.
 
 package trust.nccgroup.caldum.annotation;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 public class Wrapper {
   @Retention(RetentionPolicy.RUNTIME)
   public static @interface OnMethodEnter {
-
+    public static final String NAME = OnMethodEnter.class.getName();
+    public class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   public static @interface OnMethodExit {
-
+    public static final String NAME = OnMethodExit.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
   }
 }

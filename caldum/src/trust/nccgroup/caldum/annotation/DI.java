@@ -16,28 +16,42 @@ limitations under the License.
 
 package trust.nccgroup.caldum.annotation;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 public class DI {
   @Retention(RetentionPolicy.RUNTIME)
   public static @interface Inject {
-
+    public static final String NAME = Inject.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   public static @interface Provide {
+    public static final String NAME = Provide.class.getName();
 
     String name() default "";
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   public static @interface Provider {
-
+    public static final String NAME = Provider.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   public static @interface AgentClassLoader {
-
+    public static final String NAME = AgentClassLoader.class.getName();
+    public static class Bootstrap {
+      public static Class<? extends Annotation> INSTANCE = null;
+    }
   }
 }

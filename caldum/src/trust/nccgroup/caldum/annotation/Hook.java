@@ -18,11 +18,18 @@ package trust.nccgroup.caldum.annotation;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Hook {
+  public static final String NAME = Hook.class.getName();
+
   Class<?>[] wrappers() default void.class;
   //AgentBuilder.RedefinitionStrategy redefinition() default AgentBuilder.RedefinitionStrategy.RETRANSFORMATION;
+
+  public static class Bootstrap {
+    public static Class<? extends Annotation> INSTANCE = null;
+  }
 }
