@@ -1,7 +1,6 @@
 # Todos
 
 * test `@Dynamic` with `@Dump` / figure out why `@Dump` can break unloading
-* `__dynnsvars__` non-static vars asm rewriting
 * dockerify hotreload tests
 * add support for disabling all @Dynamic plumbing / bootstrap injection
 
@@ -30,10 +29,12 @@
 * Single hook no recursion (NoSelfRecursion) wrapper
 * (untested) bypass no recursion for individual calls
 * `@Dynamic` working
-    * static fields in @Hook class are removed and rewired into `__dynvars__` map
+    * static fields in @Dynamic @Hook class are removed and rewired into `__dynvars__` map
+    * non-static fields in @Dynamic @Hook class are removed and rewired into `__dynnsvars__` map
     * dependency injection works with @Dynamic
     * dynvar instrumentation when accessing other @Dynamic classes
-
+    * primatives (including double-sized long/double) + objects working
+        * need to test arrays
 
 # Tests
 

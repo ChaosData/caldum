@@ -24,9 +24,11 @@ public class TemplatedFileHook {
   public static class FileAbsPathHook {
 
     public String test = "baz";
+    public static int foo = 57;
 
-    public static java.util.Map __dynvars__;
-    public java.util.Map __dynnsvars__;
+    public static Map __dynvars__;
+    //public long ll = 57;
+    //public Map<String,Object> __dynnsvars__ = new HashMap<String,Object>();
 
     static {
     }
@@ -54,7 +56,12 @@ public class TemplatedFileHook {
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
-        System.out.println("__secret__ found in File::getAbsolutePath(), returning " + replacement + " (" + (new FileAbsPathHook()).test + ")");
+        //long l = 42;
+        //FileAbsPathHook f = new FileAbsPathHook();
+        //f.__dynnsvars__.put("l", l);
+        //f.ll = 58;
+        foo = 42;
+        System.out.println("__secret__ found in File::getAbsolutePath(), returning " + replacement + " (" + (new FileAbsPathHook()).test + ")" + foo);
         ret = _s.replace("__secret__", "" + replacement);
       }
     }
