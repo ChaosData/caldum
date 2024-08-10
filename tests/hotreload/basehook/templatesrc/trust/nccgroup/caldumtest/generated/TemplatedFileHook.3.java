@@ -21,10 +21,13 @@ public class TemplatedFileHook {
   @Hook
   @Dynamic
   //@Dump
+  @Debug
   public static class FileAbsPathHook {
 
     public String test = "baz";
     public static int foo = 57;
+    public int foo2 = 67;
+    public long longone = 68L;
 
     public static Map __dynvars__;
     //public long ll = 57;
@@ -56,12 +59,17 @@ public class TemplatedFileHook {
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
-        //long l = 42;
-        //FileAbsPathHook f = new FileAbsPathHook();
-        //f.__dynnsvars__.put("l", l);
-        //f.ll = 58;
-        foo = 42;
-        System.out.println("__secret__ found in File::getAbsolutePath(), returning " + replacement + " (" + (new FileAbsPathHook()).test + ")" + foo);
+        System.out.println("!!!!!!!!!!!!!!");
+        try {
+          //long l = 42;
+          FileAbsPathHook f = new FileAbsPathHook();
+          //f.__dynnsvars__.put("l", l);
+          //f.longone = 42;
+          foo = 43;
+          f.foo2 = 44;
+          System.out.println("__secret__ found in File::getAbsolutePath(), returning " + replacement + " (" + f.test + ")" + foo + ":" + f.foo2 + ":" + f.longone);
+          //System.out.println("__secret__ found in File::getAbsolutePath(), returning " + replacement + " (" + f.test + ")" + foo + ":" + f.foo2);
+        } catch (Throwable t) { t.printStackTrace(); }
         ret = _s.replace("__secret__", "" + replacement);
       }
     }

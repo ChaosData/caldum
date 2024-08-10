@@ -104,6 +104,18 @@ public class DynVarsAgent {
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
       .with(AgentBuilder.InitializationStrategy.Minimal.INSTANCE)
+        .with(new AgentBuilder.Listener.WithErrorsOnly(AgentBuilder.Listener.StreamWriting.toSystemError()))
+        //.with(new AgentBuilder.Listener.WithTransformationsOnly(AgentBuilder.Listener.StreamWriting.toSystemOut()))
+        .with(new AgentBuilder.FallbackStrategy() {
+          @Override
+          public boolean isFallback(Class<?> type, Throwable throwable) {
+            System.err.println("isFallback called: type:" + type.getName() + ", throwable:" + throwable);
+            throwable.printStackTrace();
+            return true;
+          }
+        })
+        .with(AgentBuilder.InstallationListener.StreamWriting.toSystemOut())
+
         //.with(ConstructorStrategy.Default.DEFAULT_CONSTRUCTOR)
     //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       //.with(new AgentBuilder.Listener.StreamWriting(System.err));
@@ -280,26 +292,28 @@ public class DynVarsAgent {
         //this doesn't appear to actually work or do anything
         //builder = builder.initializer(new LoadedTypeInitializer.ForStaticField(DYNANNOS, annomap2));
 
+        System.out.println("//////////////// got to end of builder");
+        logger.info("//////////////// got to end of builder");
 
         return builder;
       }
     });
 
-    abe = abe.transform(new AgentBuilder.Transformer() {
-      @Override
-      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
-        try {
-          //todo: do this only when annotated for it
-          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars"));
-          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
-            System.out.println(kv.getValue());
-          }*/
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-        return builder;
-      }
-    });
+//    abe = abe.transform(new AgentBuilder.Transformer() {
+//      @Override
+//      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
+//        try {
+//          //todo: do this only when annotated for it
+//          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars"));
+//          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
+//            System.out.println(kv.getValue());
+//          }*/
+//        } catAgentBuilder.Listener.StreamWriting.toSystemError()ch (IOException e) {
+//          e.printStackTrace();
+//        }
+//        return builder;
+//      }
+//    });
 
 
 

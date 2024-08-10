@@ -3,6 +3,8 @@
 * test `@Dynamic` with `@Dump` / figure out why `@Dump` can break unloading
 * dockerify hotreload tests
 * add support for disabling all @Dynamic plumbing / bootstrap injection
+* handle lambdas
+* convert all annotation checks to support bootstrap
 
 ## Want:
 

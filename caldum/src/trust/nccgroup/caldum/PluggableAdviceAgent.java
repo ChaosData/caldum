@@ -179,10 +179,18 @@ public class PluggableAdviceAgent {
 
       builder.hookClass(hook);
       builder.wrappers(h.wrappers());
-      builder.test(hook.getAnnotation(Test.class) != null);
-      builder.debug(hook.getAnnotation(Debug.class) != null);
-      builder.dump(hook.getAnnotation(Dump.class) != null);
-      builder.dump_wrappers(hook.getAnnotation(DumpWrappers.class) != null);
+      if (hook.getAnnotation(Test.class) != null || (Test.Bootstrap.INSTANCE != null && hook.getAnnotation(Test.Bootstrap.INSTANCE) != null)) {
+        builder.test(true);
+      }
+      if (hook.getAnnotation(Debug.class) != null || (Debug.Bootstrap.INSTANCE != null && hook.getAnnotation(Debug.Bootstrap.INSTANCE) != null)) {
+        builder.debug(true);
+      }
+      if (hook.getAnnotation(Dump.class) != null || (Dump.Bootstrap.INSTANCE != null && hook.getAnnotation(Dump.Bootstrap.INSTANCE) != null)) {
+        builder.dump(true);
+      }
+      if (hook.getAnnotation(DumpWrappers.class) != null || (DumpWrappers.Bootstrap.INSTANCE != null && hook.getAnnotation(DumpWrappers.Bootstrap.INSTANCE) != null)) {
+        builder.dump_wrappers(true);
+      }
 
       for (Field field : configClass.getDeclaredFields()) {
         if (!Modifier.isStatic(field.getModifiers())) {
@@ -359,7 +367,7 @@ public class PluggableAdviceAgent {
 
         // delete all fields and add all the ones from the existing one
         if (alreadyInjectedClass != null) {
-          System.out.println("alreadyInjectedClass: " + alreadyInjectedClass);
+          logger.info("alreadyInjectedClass: " + alreadyInjectedClass);
           //dtb = dtb.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
 
           /* // remove for now

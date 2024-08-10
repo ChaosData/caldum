@@ -73,6 +73,7 @@ public final class HookProcessor {
     HashMap<String,Object> globalProvides = new HashMap<String, Object>(16);
 
     Iterable<Class<?>> cs;
+    logger.info("cl: " + cl);
     if (cl instanceof InverseURLClassLoader) {
       cs = ClassScanner.scan((InverseURLClassLoader)cl);
     } else if (jarPath != null) {
@@ -84,10 +85,13 @@ public final class HookProcessor {
     }
 
     for (Class<?> c : cs) {
+      logger.info(">> c: " + c);
       if (c == null) {
+        logger.severe("c == null");
         continue;
       }
 
+      //todo: handle separately from in-built hooks like JavaAgentHiderHooks
       if (!c.getName().startsWith(scanPrefix)) {
         continue;
       }
@@ -108,6 +112,7 @@ public final class HookProcessor {
     //force reinstruument the dynamics now that they're all loaded
     for (Class<?> dynamic_hook : dynamic_hooks) {
       try {
+        logger.info("Attempting to retransform @Dynamic class: " + dynamic_hook);
         inst.retransformClasses(new Class[]{dynamic_hook});
       } catch (UnmodifiableClassException e) {
         logger.log(Level.SEVERE, "Failed to retransform @Dynamic class " + dynamic_hook, e);
@@ -115,6 +120,8 @@ public final class HookProcessor {
     }
 
     for (Class<?> hook : hooks) {
+      logger.info("Attempting to apply @Hook class: " + hook);
+
       Class<?>[] nestedClasses = hook.getDeclaredClasses();
       if (nestedClasses.length != 1) {
         logger.log(Level.SEVERE, String.format(
@@ -145,6 +152,7 @@ public final class HookProcessor {
 //          counter += 1;
 //          logger.log(Level.INFO, "" + counter + " - " + f.toString());
 //        }
+        //todo: use Bootstrap
         if (hook.getAnnotation(Dump.class) != null) {
           Dumper.dumpClass(inst, hook, "./hook." + hook.getName() + ".class");
         }
@@ -210,6 +218,7 @@ public final class HookProcessor {
 
       for (Class<?> injectedhook : injectedhooks) {
         if (injectedhook == null) {
+          logger.severe("injectedhook == null for hook: " + hook);
           continue;
         }
 
@@ -223,6 +232,7 @@ public final class HookProcessor {
         if (injectedhook == injectedhooks[0]) {
           // yes, ==, we only want to set up the fields on the classpath version
           // we don't want to cause the hooks to be applied twice
+          logger.info("injectedhook == injectedhooks[0]");
           continue;
         }
 

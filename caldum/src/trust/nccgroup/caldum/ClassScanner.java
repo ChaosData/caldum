@@ -16,6 +16,8 @@ limitations under the License.
 
 package trust.nccgroup.caldum;
 
+import trust.nccgroup.caldum.util.TmpLogger;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -28,6 +30,8 @@ import java.util.Iterator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Instances of this class are not thread safe.
@@ -36,6 +40,7 @@ import java.util.jar.JarInputStream;
  *   - The Management
  */
 public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>> {
+  private static final Logger logger = TmpLogger.DEFAULT;
 
   private ClassLoader ucl;
   private ArrayList<File> as;
@@ -60,6 +65,7 @@ public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>
         try {
           jf = new JarFile(f);
         } catch (IOException e) {
+          logger.log(Level.SEVERE, "ioe", e);
           continue;
         }
 
@@ -93,6 +99,7 @@ public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>
         try {
           jf = new JarFile(f);
         } catch (IOException e) {
+          logger.log(Level.SEVERE, "ioe", e);
           continue;
         }
 
