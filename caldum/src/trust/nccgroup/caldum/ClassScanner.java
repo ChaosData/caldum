@@ -144,8 +144,9 @@ public final class ClassScanner implements Iterable<Class<?>>, Iterator<Class<?>
       Class<?> c;
       try {
         c = ucl.loadClass(className);
-      } catch (Throwable ignored) {
+      } catch (Throwable t) {
         //ignored.printStackTrace();
+        logger.log(Level.SEVERE, "failed to load class: " + className, t);
         continue;
       }
       return c;
