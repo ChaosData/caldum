@@ -26,6 +26,7 @@ public class TemplatedFileHook {
     public String test = "baz";
 
     public static java.util.Map __dynvars__;
+    public java.util.Map __dynnsvars__;
 
     static {
     }

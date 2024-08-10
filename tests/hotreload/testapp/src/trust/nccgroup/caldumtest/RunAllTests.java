@@ -8,9 +8,9 @@ import trust.nccgroup.caldumtest.test.*;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   TemplatedFileHookTest.class,
-//  TemplatedFileHookTest.class,
-//  TemplatedFileHookTest.class,
-//  TemplatedFileHookTest.class,
-//  TemplatedFileHookTest.class,
+  TemplatedFileHookTest.class,
+  TemplatedFileHookTest.class,
+  TemplatedFileHookTest.class,
+  TemplatedFileHookTest.class,
 })
 public class RunAllTests {}

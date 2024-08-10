@@ -21,7 +21,7 @@ public class TemplatedFileHook {
   //@Dump
   public static class FileAbsPathHook {
 
-    public String test = "foo";
+    public String test;
     //public Map<String,Object> __dynnsvars__ = new HashMap<String,Object>();
 
     //static {}
@@ -53,7 +53,10 @@ public class TemplatedFileHook {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
         //System.out.println("wat: " + wat + " " + (new FileAbsPathHook()).__dynnsvars__.get("test"));
-        System.out.println("wat: " + wat + " " + (new FileAbsPathHook()).test);
+        FileAbsPathHook f = new FileAbsPathHook();
+        f.test = "foo";
+        System.out.println("wat: " + wat + " " + f.test);
+        //System.out.println("wat: " + wat + " " + (new FileAbsPathHook()).test);
         System.out.println("__secret__ found in File::getAbsolutePath(), returning __notsecret__");
         ret = _s.replace("__secret__", "__notsecret__");
       }

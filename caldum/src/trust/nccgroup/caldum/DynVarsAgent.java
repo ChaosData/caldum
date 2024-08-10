@@ -24,12 +24,18 @@ import net.bytebuddy.description.annotation.AnnotationDescription;
 import net.bytebuddy.description.annotation.AnnotationList;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
+import net.bytebuddy.description.modifier.Visibility;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.TypeResolutionStrategy;
+import net.bytebuddy.dynamic.scaffold.InstrumentedType;
+import net.bytebuddy.dynamic.scaffold.subclass.ConstructorStrategy;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.LoadedTypeInitializer;
+import net.bytebuddy.implementation.MethodCall;
+import net.bytebuddy.implementation.SuperMethodCall;
 import net.bytebuddy.implementation.attribute.TypeAttributeAppender;
+import net.bytebuddy.implementation.auxiliary.TypeProxy;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.jar.asm.ClassWriter;
 import net.bytebuddy.jar.asm.MethodVisitor;
@@ -41,10 +47,14 @@ import trust.nccgroup.caldum.annotation.DI;
 import trust.nccgroup.caldum.annotation.Dynamic;
 import trust.nccgroup.caldum.annotation.Hook;
 import trust.nccgroup.caldum.asm.DynamicFields;
+import trust.nccgroup.caldum.asm.NopByteCodeAppender;
 import trust.nccgroup.caldum.util.TmpLogger;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Constructor;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +104,7 @@ public class DynVarsAgent {
       .with(AgentBuilder.RedefinitionStrategy.DISABLED) // we don't want to do this for classes that have already been loaded
       .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
       .with(AgentBuilder.InitializationStrategy.Minimal.INSTANCE)
-
+        //.with(ConstructorStrategy.Default.DEFAULT_CONSTRUCTOR)
     //.disableClassFormatChanges() // unclear right now what bb is doing, but it's causing a lot of issues for merely returning the builder w/o applying anything
       //.with(new AgentBuilder.Listener.StreamWriting(System.err));
       ;
@@ -202,41 +212,59 @@ public class DynVarsAgent {
         // it's unclear from the bytebuddy api if there's a good wey to figure out if one
         // is already there to begin with, so adding a NOP to an existing one if it's there should be relatively safe.
         // note: we may not need this now that we're adding an initializer for __dynannos__. (nope, not yet at least)
-        builder = builder.initializer(new ByteCodeAppender() {
-          @Override
-          public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-            methodVisitor.visitInsn(NOP);
-            return Size.ZERO;
+        builder = builder.initializer(new NopByteCodeAppender());
+
+        if (typeDescription.getDeclaredMethods().filter(
+              ElementMatchers.<MethodDescription.InDefinedShape>isConstructor().or(
+                ElementMatchers.<MethodDescription.InDefinedShape>isDefaultConstructor())
+            ).isEmpty()) {
+
+          Constructor<?>[] cs = null;
+          TypeDescription.Generic supe = typeDescription.getSuperClass();
+          if (supe != null) {
+            cs = supe.getClass().getDeclaredConstructors();
+          } else {
+            cs = new Constructor[]{};
           }
-        });
+
+          if (cs.length > 0) {
+//            for (Constructor<?> c : cs) {
+//              if (c.getParameterTypes().length == 0) {
+//                builder = builder.defineConstructor(Visibility.PUBLIC).intercept(MethodCall.invoke(c).onSuper());
+//                break;
+//              }
+//            }
+            builder = builder.defineConstructor(Visibility.PUBLIC).intercept(SuperMethodCall.INSTANCE);
+          } else {
+            builder = builder.defineConstructor(Visibility.PUBLIC).intercept(new Implementation() {
+              @Override
+              public InstrumentedType prepare(InstrumentedType instrumentedType) {
+                return NoOp.INSTANCE.prepare(instrumentedType);
+              }
+
+              @Override
+              public ByteCodeAppender appender(Target implementationTarget) {
+                return new NopByteCodeAppender();
+              }
+            });
+          }
+        }
 
         builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
             .writerFlags(ClassWriter.COMPUTE_MAXS)
             .invokable(ElementMatchers.isTypeInitializer(),
-                new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
-                  @Override
-                  public MethodVisitor wrap(TypeDescription instrumentedType,
-                                            MethodDescription instrumentedMethod,
-                                            MethodVisitor methodVisitor,
-                                            Implementation.Context implementationContext,
-                                            TypePool typePool, int writerFlags, int readerFlags) {
-                    return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, true);
-                  }
-                }));
+                DynamicFields.methodVisitor(DynamicFields.Type.TypeInitializer)
+            ));
 
         builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
-            .invokable(any().and(not(isTypeInitializer())),
-                new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
-                  @Override
-                  public MethodVisitor wrap(TypeDescription instrumentedType,
-                                            MethodDescription instrumentedMethod,
-                                            MethodVisitor methodVisitor,
-                                            Implementation.Context implementationContext,
-                                            TypePool typePool, int writerFlags, int readerFlags) {
-                    //System.out.println("ForDeclaredMethods.MethodVisitorWrapper wrap");
-                    return new DynamicFields(instrumentedType, instrumentedMethod, methodVisitor, false);
-                  }
-                }));
+            .writerFlags(ClassWriter.COMPUTE_MAXS)
+            .invokable(ElementMatchers.isConstructor(),
+                DynamicFields.methodVisitor(DynamicFields.Type.Constructor)
+            ));
+
+        builder = builder.visit(new AsmVisitorWrapper.ForDeclaredMethods()
+            .invokable(any().and(isMethod().and(not(isTypeInitializer()).and(not(isConstructor())))),
+                DynamicFields.methodVisitor(DynamicFields.Type.Method)));
 
 //        logger.info("removing all other fields: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
 //        builder = builder.visit(new MemberRemoval().stripFields(not(named(DYNVARS))));
@@ -247,6 +275,8 @@ public class DynVarsAgent {
         if (typeDescription.getDeclaredFields().filter(named(DYNANNOS)).isEmpty()) {
           builder = builder.defineField(DYNANNOS, Map.class, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
         }
+        builder = builder.visit(new MemberRemoval().stripFields(not(ElementMatchers.<FieldDescription.InDefinedShape>isStatic()).and(not(named(DYNNSVARS)))));
+
         //this doesn't appear to actually work or do anything
         //builder = builder.initializer(new LoadedTypeInitializer.ForStaticField(DYNANNOS, annomap2));
 
@@ -255,22 +285,24 @@ public class DynVarsAgent {
       }
     });
 
-//    abe = abe.transform(new AgentBuilder.Transformer() {
-//      @Override
-//      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
-//        try {
-//          //todo: do this only when annotated for it
-//          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars"));
-//          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
-//            System.out.println(kv.getValue());
-//          }*/
-//        } catch (IOException e) {
-//          e.printStackTrace();
-//        }
-//        return builder;
-//      }
-//    });
-//
+    abe = abe.transform(new AgentBuilder.Transformer() {
+      @Override
+      public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, ProtectionDomain domain) {
+        try {
+          //todo: do this only when annotated for it
+          Map<TypeDescription, File> m = builder.make().saveIn(new File("./.dynvars"));
+          /*for (Map.Entry<TypeDescription, File> kv : m.entrySet()) {
+            System.out.println(kv.getValue());
+          }*/
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        return builder;
+      }
+    });
+
+
+
 
     return abe.installOn(inst);
   }
