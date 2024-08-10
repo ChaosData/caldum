@@ -191,9 +191,12 @@ public class DynVarsAgent {
           logger.info("not adding __dynvars__ to class (has at least one): " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
         }
 //        //todo: implement DynamicFields impl for access to non-static fields
-//        if (typeDescription.getDeclaredFields().filter(named(DYNNSVARS)).isEmpty()) {
-//          builder = builder.defineField(DYNNSVARS, Map.class, Opcodes.ACC_PUBLIC);
-//        }
+        if (typeDescription.getDeclaredFields().filter(named(DYNNSVARS)).isEmpty()) {
+          logger.info("adding __dynnsvars__ to class: " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+          builder = builder.defineField(DYNNSVARS, Map.class, Opcodes.ACC_PUBLIC);
+        } else {
+          logger.info("not adding __dynnsvars__ to class (has at least one): " + typeDescription.getName() + " (from classloader: " + classLoader + ")");
+        }
 
         // we need to force a static/type initializer into existence if one doesn't exist
         // it's unclear from the bytebuddy api if there's a good wey to figure out if one

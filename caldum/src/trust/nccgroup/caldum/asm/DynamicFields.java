@@ -75,122 +75,175 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
     }
   }
 
+  private boolean isDynamic(String owner) {
+    boolean is_dynamic = iclass.equals(owner);
+    if (!is_dynamic) {
+      Boolean owner_dynamic = owners_dynamic.get(owner);
+      if (owner_dynamic != null) {
+        is_dynamic = owner_dynamic;
+      } else {
+        try {
+          Class<?> c = Class.forName(external(owner), true, null);
+          Annotation d = c.getAnnotation(Dynamic.Bootstrap.INSTANCE);
+          if (d != null) {
+            is_dynamic = true;
+            owners_dynamic.put(owner, Boolean.TRUE);
+          }
+        } catch (Throwable t) {
+          //probably possible to get in a loop if two @Dynamic classes refer to each other
+          //might need to do this another way
+          //maybe force reload/reinstrument after the other classes are loaded
+          logger.log(Level.SEVERE, "error loading class", t);
+        }
+      }
+    }
+    return is_dynamic;
+  }
+
+  public void getStatic(String owner, String name, String desc) {
+    super.visitFieldInsn(GETSTATIC, owner, DYNVARS, "Ljava/util/Map;");
+    super.visitLdcInsn(name);
+    super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+    if ("J".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Long");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Long.class), "longValue", "()J", false);
+    } else if ("D".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Double");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Double.class), "doubleValue", "()D", false);
+    } else if ("Z".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Boolean");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Boolean.class), "booleanValue", "()Z", false);
+    } else if ("B".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Byte");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Byte.class), "byteValue", "()B", false);
+    } else if ("C".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Character");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Character.class), "charValue", "()C", false);
+    } else if ("S".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Short");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Short.class), "shortValue", "()S", false);
+    } else if ("I".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Integer");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Integer.class), "intValue", "()I", false);
+    } else if ("F".equals(desc)) {
+      super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Float");
+      super.visitMethodInsn(INVOKEVIRTUAL, internal(Float.class), "floatValue", "()F", false);
+    } else {
+      if (desc.startsWith("L")) {
+        String d2 = desc.substring(1, desc.length()-1);
+        super.visitTypeInsn(Opcodes.CHECKCAST, d2);
+      } else {
+        // todo: handle arrays
+        super.visitTypeInsn(Opcodes.CHECKCAST, desc);
+      }
+    }
+  }
+
+  public void putStatic(String owner, String name, String desc) {
+    // we just don't support setting these things right now, so we just clear the value off the stack to NOP it.
+    // getting an extra local variable to stash the double-sized values is complicated.
+    if ("J".equals(desc)) {
+      logger.warning("Dynamic variable set for type `long` not supported in `" +
+          instrumentedMethod.toString() + "`. Operation will be disabled in generated code.");
+      super.visitInsn(Opcodes.POP2);
+      return;
+    } else if ("D".equals(desc)) {
+      logger.warning("Dynamic variable set for type `double` not supported in `" +
+          instrumentedMethod.toString() + "`. Operation will be disabled in generated code.");
+      super.visitInsn(Opcodes.POP2);
+      return;
+    }
+    // because the value is already on the stack, we play some tricks to shift it down
+    //   without using a local variable.
+    super.visitFieldInsn(GETSTATIC, owner, DYNVARS, "Ljava/util/Map;");
+    super.visitInsn(Opcodes.SWAP);
+    super.visitLdcInsn(name);
+    super.visitInsn(Opcodes.SWAP);
+    super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
+    super.visitInsn(Opcodes.POP);
+  }
+
+  public void getField(String owner, String name, String desc) {
+    super.visitFieldInsn(GETFIELD, owner, DYNNSVARS, "Ljava/util/Map;");
+    super.visitLdcInsn(name);
+    super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+    if (desc.startsWith("L")) {
+      String d2 = desc.substring(1, desc.length()-1);
+      super.visitTypeInsn(Opcodes.CHECKCAST, d2);
+    } else {
+      // todo: handle arrays
+      super.visitTypeInsn(Opcodes.CHECKCAST, desc);
+    }
+
+  }
+
+  public void putField(String owner, String name, String desc) {
+    /*
+      15: aload_0
+      16: getfield      #4                  // Field __dynnsvars__:Ljava/util/Map;
+      19: ldc           #5                  // String test
+      21: ldc           #6                  // String foo
+      23: invokeinterface #7,  3            // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      28: pop
+      ///////////
+      4: aload_0
+      5: ldc           #2                  // String foo
+      7: putfield      #3                  // Field test:Ljava/lang/String;
+      ///////////
+      4: aload_0
+      5: ldc           #2                  // String foo
+      //7: putfield      #3                  // Field test:Ljava/lang/String;
+      [ this, foo ]
+      ->getfield // Field __dynnsvars__:Ljava/util/Map;
+      [ this, foo, __dynnsvars__ ]
+      ->swap
+      [ this, __dynnsvars__, foo ]
+      ->ldc      // String test
+      [ this, __dynnsvars__, foo, test ]
+      ->swap
+      ->invokeinterface #7,  3            // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      ->pop
+     */
+    
+
+
+
+    super.visitFieldInsn(GETFIELD, owner, DYNNSVARS, "Ljava/util/Map;");
+    super.visitInsn(Opcodes.SWAP);
+    super.visitLdcInsn(name);
+    super.visitInsn(Opcodes.SWAP);
+    super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
+    super.visitInsn(Opcodes.POP);
+  }
+
   public void visitFieldInsn(int opcode, String owner, String name, String desc) {
     //System.out.println("visitFieldInsn: " + owner);
 
-    boolean doswap = false;
-
-    if (opcode == GETSTATIC || opcode == PUTSTATIC) {
-      //logger.info("opcode: " + opcode + " owner: " + owner + " name: " + name + " desc: " + desc + " iclass: " + iclass);
-      boolean is_dynamic = iclass.equals(owner);
-      if (!is_dynamic) {
-        Boolean owner_dynamic = owners_dynamic.get(owner);
-        if (owner_dynamic != null) {
-          is_dynamic = owner_dynamic;
-        } else {
-          try {
-            Class<?> c = Class.forName(external(owner), true, null);
-            Annotation d = c.getAnnotation(Dynamic.Bootstrap.INSTANCE);
-            if (d != null) {
-              is_dynamic = true;
-//              logger.info("is_dynamic: true for " + owner + " " + name);
-              owners_dynamic.put(owner, Boolean.TRUE);
-            }
-
-//            Annotation[] cas = c.getDeclaredAnnotations();
-//            for (Annotation ca : cas) {
-//              if (ca.annotationType().getName().equals(Dynamic.NAME)) {
-//                is_dynamic = true;
-//                owners_dynamic.put(owner, Boolean.TRUE);
-//                break;
-//              }
-//            }
-            //this appears to fail to find the annotations, probably b/c the bootstrap injected version
-            //is considered different from the .class one here
-//            Dynamic d = c.getAnnotation(Dynamic.class);
-//            if (d != null) {
-//              logger.info("is_dynamic: true for " + owner + " " + name);
-//              is_dynamic = true;
-//              owners_dynamic.put(owner, Boolean.TRUE);
-//            }
-          } catch (Throwable t) {
-            //probably possible to get in a loop if two @Dynamic classes refer to each other
-            //might need to do this another way
-            //maybe force reload/reinstrument after the other classes are loaded
-            logger.log(Level.SEVERE, "error loading class", t);
-          }
-        }
-      }
-
+    if (opcode == GETSTATIC) {
+      boolean is_dynamic = isDynamic(owner);
       if (is_dynamic && !DYNVARS.equals(name)) {
-        if (opcode == GETSTATIC) {
-          super.visitFieldInsn(GETSTATIC, owner, DYNVARS, "Ljava/util/Map;");
-          super.visitLdcInsn(name);
-          super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
-          if ("J".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Long");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Long.class), "longValue", "()J", false);
-          } else if ("D".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Double");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Double.class), "doubleValue", "()D", false);
-          } else if ("Z".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Boolean");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Boolean.class), "booleanValue", "()Z", false);
-          } else if ("B".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Byte");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Byte.class), "byteValue", "()B", false);
-          } else if ("C".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Character");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Character.class), "charValue", "()C", false);
-          } else if ("S".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Short");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Short.class), "shortValue", "()S", false);
-          } else if ("I".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Integer");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Integer.class), "intValue", "()I", false);
-          } else if ("F".equals(desc)) {
-            super.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Float");
-            super.visitMethodInsn(INVOKEVIRTUAL, internal(Float.class), "floatValue", "()F", false);
-          } else {
-            if (desc.startsWith("L")) {
-              String d2 = desc.substring(1, desc.length()-1);
-              super.visitTypeInsn(Opcodes.CHECKCAST, d2);
-            } else {
-              // todo: handle arrays
-              super.visitTypeInsn(Opcodes.CHECKCAST, desc);
-            }
-          }
-          return;
-        } else if (opcode == PUTSTATIC) {
-          // we just don't support setting these things right now, so we just clear the value off the stack to NOP it.
-          // getting an extra local variable to stash the double-sized values is complicated.
-          if ("J".equals(desc)) {
-            logger.warning("Dynamic variable set for type `long` not supported in `" +
-              instrumentedMethod.toString() + "`. Operation will be disabled in generated code.");
-            super.visitInsn(Opcodes.POP2);
-            return;
-          } else if ("D".equals(desc)) {
-            logger.warning("Dynamic variable set for type `double` not supported in `" +
-              instrumentedMethod.toString() + "`. Operation will be disabled in generated code.");
-            super.visitInsn(Opcodes.POP2);
-            return;
-          } else {
-            // because the value is already on the stack, we play some tricks to shift it down
-            //   without using a local variable.
-            super.visitFieldInsn(GETSTATIC, owner, DYNVARS, "Ljava/util/Map;");
-            super.visitInsn(Opcodes.SWAP);
-            super.visitLdcInsn(name);
-            super.visitInsn(Opcodes.SWAP);
-            super.visitMethodInsn(INVOKEINTERFACE, internal(Map.class), "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
-            super.visitInsn(Opcodes.POP);
-
-            return;
-          }
-        }
-      }/* else {
-        System.out.println(">> iclass != owner: " + iclass + " != " + owner + ", name: " + name + ", desc: " + desc);
-      }*/
-    }
+        getStatic(owner, name, desc);
+        return;
+      }
+    } else if (opcode == PUTSTATIC) {
+      boolean is_dynamic = isDynamic(owner);
+      if (is_dynamic && !DYNVARS.equals(name)) {
+        putStatic(owner, name, desc);
+        return;
+      }
+    }/* else if (opcode == GETFIELD) {
+      boolean is_dynamic = isDynamic(owner);
+      if (is_dynamic && !DYNVARS.equals(name)) {
+        getField(owner, name, desc);
+        return;
+      }
+    } else if (opcode == PUTFIELD) {
+      boolean is_dynamic = isDynamic(owner);
+      if (is_dynamic && !DYNVARS.equals(name)) {
+        putField(owner, name, desc);
+        return;
+      }
+    }*/
 
     super.visitFieldInsn(opcode, owner, name, desc);
   }

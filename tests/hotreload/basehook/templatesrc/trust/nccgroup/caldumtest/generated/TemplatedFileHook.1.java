@@ -5,7 +5,7 @@ import net.bytebuddy.matcher.ElementMatcher;
 import trust.nccgroup.caldum.annotation.*;
 import trust.nccgroup.caldum.annotation.DI.Inject;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -21,7 +21,14 @@ public class TemplatedFileHook {
   //@Dump
   public static class FileAbsPathHook {
 
+    public String test = "foo";
+    //public Map<String,Object> __dynnsvars__ = new HashMap<String,Object>();
+
     //static {}
+
+    /*public FileAbsPathHook() {
+      __dynnsvars__.put("test", "foo");
+    }*/
 
     public static class Settings {
       @Matcher.Ignore
@@ -45,7 +52,8 @@ public class TemplatedFileHook {
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
-        System.out.println("wat: " + wat);
+        //System.out.println("wat: " + wat + " " + (new FileAbsPathHook()).__dynnsvars__.get("test"));
+        System.out.println("wat: " + wat + " " + (new FileAbsPathHook()).test);
         System.out.println("__secret__ found in File::getAbsolutePath(), returning __notsecret__");
         ret = _s.replace("__secret__", "__notsecret__");
       }

@@ -23,6 +23,8 @@ public class TemplatedFileHook {
   //@Dump
   public static class FileAbsPathHook {
 
+    public String test = "bar";
+
     //static {}
 
     public static class Settings {
@@ -45,7 +47,7 @@ public class TemplatedFileHook {
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
-        System.out.println("__secret__ found in File::getAbsolutePath(), returning __notsecret!__");
+        System.out.println("__secret__ found in File::getAbsolutePath(), returning __notsecret!__ (" + (new FileAbsPathHook()).test + ")");
         ret = _s.replace("__secret__", DumbHook.NopHook.retval);
         //ret = _s.replace("__secret__", "__notsecret!__");
       }
