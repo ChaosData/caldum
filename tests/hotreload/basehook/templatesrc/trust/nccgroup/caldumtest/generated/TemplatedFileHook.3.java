@@ -21,7 +21,7 @@ public class TemplatedFileHook {
   @Hook
   @Dynamic
   //@Dump
-  @Debug
+  //@Debug
   public static class FileAbsPathHook {
 
     public String test = "baz";
@@ -59,7 +59,6 @@ public class TemplatedFileHook {
     static void exit(@Return(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object ret) {
       String _s = (String)ret;
       if (_s != null && _s.indexOf("__secret__") != -1) {
-        System.out.println("!!!!!!!!!!!!!!");
         try {
           //long l = 42;
           FileAbsPathHook f = new FileAbsPathHook();

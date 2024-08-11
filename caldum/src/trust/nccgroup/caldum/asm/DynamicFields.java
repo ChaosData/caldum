@@ -159,7 +159,7 @@ public class DynamicFields extends StackAwareMethodVisitor implements Opcodes {
   private final static Map<String,String[]> nativeGets;
   static {
     nativeGets = new HashMap<String,String[]>();
-    nativeGets.put("J", new String[]{"java/lang/Long", "longValue", "()J;"});
+    nativeGets.put("J", new String[]{"java/lang/Long", "longValue", "()J"});
     nativeGets.put("D", new String[]{"java/lang/Double", "doubleValue", "()D"});
     nativeGets.put("Z", new String[]{"java/lang/Boolean", "booleanValue", "()Z"});
     nativeGets.put("B", new String[]{"java/lang/Byte", "byteValue", "()B"});
