@@ -10,7 +10,7 @@ Caldum's main feature is its hot-reloading capabilities that enable hooks to be
 updated at runtime. It additionally provides annotation-based dependency
 injection similar to JAX-RS, enabling simpler development workflows that do not
 require application restarts. Lastly, Caldum provides an interface to extend
-function hooks with dynamic instrumentation.
+function hooks themselves with dynamic instrumentation.
 
 ## Building
 
