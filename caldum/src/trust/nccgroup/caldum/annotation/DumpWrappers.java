@@ -1,5 +1,6 @@
 /*
-Copyright 2018 NCC Group
+Copyright 2019 NCC Group
+Copyright 2024 Jeff Dileo
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
