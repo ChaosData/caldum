@@ -12,15 +12,52 @@ injection similar to JAX-RS, enabling simpler development workflows that do not
 require application restarts. Lastly, Caldum provides an interface to extend
 function hooks themselves with dynamic instrumentation.
 
+Caldum (and VulcanLoader \[see below\]) support Java 6 and above (most recently
+tested against Java 21) and have been tested on both the HotSpot and OpenJ9 JVMs.
+
 ## Building
 
-Caldum is intended as a pure library. Currently, it may be built and installed
-into the local Maven repository on a host with the following commands.
+The following will build everything in the current environment:
+
+~~~bash
+./build.sh
+~~~
+
+This is more or less equvalent to:
 
 ~~~bash
 cd caldum && ./gradlew; cd ..
 cd vulcanloader && ./gradlew; cd ..
 cd embeddedagentplugin && ./gradlew; cd ..
+~~~
+
+But if you want a saner/cleaner build, the following will build everything in a Docker container:
+
+~~~bash
+sudo ./build-docker.sh
+~~~
+
+## Testing
+
+The following will run all of the "static" tests:
+
+~~~bash
+sudo ./tests/test.sh
+~~~
+
+Howver, individual tests can be performed under various configurations:
+
+~~~bash
+sudo ./test.sh 'java89' -- 'premain' ---- eclipse-temurin:21-jdk ibm-semeru-runtimes:open-21-jdk
+sudo ./test.sh 'java67' -- 'agentmain' ---- openjdk:6-jdk
+~~~
+
+There is a more "dynamic" test in the works in `tests/hotreload`, but it's a bit more involved
+to run at the moment and has not been dockerized yet:
+
+~~~bash
+cd tests/hotreload/testapp
+JAVA_HOME=path/to/testingjdk ./test.sh 5
 ~~~
 
 # VulcanLoader
@@ -92,8 +129,8 @@ agent is unloaded (e.g. manually or when reloading).
 Caldum and VulcanLoader currently attempt to maintain support for the
 same versions of Java supported by Byte Buddy (currently Java 6 through 9+).
 Due to this, the codebases of Caldum and VulcanLoader themselves are
-built as Java 6; however, Caldum-compatible agents may target newer versions of
-Java supported by the JVM being instrumented.
+built as Java 6 (using OpenJDK 11); however, Caldum-compatible agents may
+target newer versions of Java supported by the JVM being instrumented.
 
 # Annotations (`trust.nccgroup.caldum.annotation.*`)
 
