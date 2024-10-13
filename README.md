@@ -172,6 +172,18 @@ class ExampleHook {
 }
 ~~~
 
+### `@Dynamic`
+
+This annotation identifies that a Caldum hook class is to be preprocessed using
+the `DynVarsAgent`/`DynamicFields` classes. They rewrite classes to proxy their
+static and non-static fields (and associated field accesses) into fixed Map objects
+that it adds to the classes. This makes it possible to make a wider range of hot-reload
+modifications to already loaded hooks beyond what is traditionally supported by
+mainstream JVMs (e.g. not adding/removing/reordering fields/methods, and not editing
+method signatures). Generally speaking, this annotation should be used primarily
+during the development of Caldum-based agents/hooks as its modifications can make
+analyzing one's own hooks at runtime a bit annoying.
+
 ### `@Debug`
 
 This annotation is used to configure Byte Buddy to write events and exceptions
@@ -273,6 +285,7 @@ specify at least one `@Advice.OnMethodEnter`-/`@Advice.OnMethodExit`-annotated
 static method. Care should be taken when specifying `@Advice` dependency
 injected method arguments; these will be applied to the `@Hook`-annotated class
 itself and not the classes it instruments.
+
 
 # Included Hook Wrappers (`trust.nccgroup.caldum.wrappers.*`)
 
